@@ -1,15 +1,27 @@
-import ImageConvertion
 import PIL.Image as Image
-import io
-import base64
+import ImageConvertion
+import ChannelNoise
 
-filepath = 'notebook_icon.png'
+data = ImageConvertion.generate_bit_data()
 
-string_base64 = ImageConvertion.image_to_data_url(filepath)
-byte_string = string_base64.encode()
+img = Image.new('1', (50, 50))
+pixels = img.load()
+for i in range(img.size[0]):
+    for j in range(img.size[1]):
+        pixels[i, j] = data[i][j]
 
-b = base64.b64decode(byte_string)
-
-print(b)
-img = Image.open(io.BytesIO(b))
 img.show()
+img.save('original_image.bmp')
+
+# simulating channel noise
+noise_data = ChannelNoise.random_noise(data)
+
+# after decoding
+img_after = Image.new('1', (50, 50))
+pixels_after = img_after.load()
+for i in range(img_after.size[0]):
+    for j in range(img_after.size[1]):
+        pixels_after[i, j] = noise_data[i][j]
+
+img_after.show()
+img_after.save('decoded_image.bmp')
