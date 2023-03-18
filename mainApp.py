@@ -1,6 +1,7 @@
 import PIL.Image as Image
 import DataGenerator
 import ChannelNoise
+import ParityBitCoding
 
 # image width
 data_sequences = 8
@@ -17,6 +18,17 @@ for i in range(img.size[0]):
 
 # img.show()
 img.save('./pictures/original_image.bmp')
+
+# =========== parity bit encoding ===========
+enc = ParityBitCoding.parity_bit_encode(data)
+parity_bit = ParityBitCoding.get_parity_bit(enc[0])
+# test for parity code
+dec = ParityBitCoding.parity_bit_decode(enc)
+check_parity = ParityBitCoding.check_parity(dec[0])
+# true or false
+print(parity_bit == check_parity)
+# =========== parity bit encoding ===========
+
 
 # simulating channel noise
 # noise_data = ChannelNoise.bsc_channel(data, 30)

@@ -1,8 +1,9 @@
+import copy
 import random
 
 
 def random_noise(bit_data_list):
-    new_list = bit_data_list.copy()
+    new_list = copy.deepcopy(bit_data_list)
     for i in range(len(bit_data_list)):
         for j in range(len(bit_data_list[i])):
             choice = random.choice((0, 1))
@@ -13,7 +14,7 @@ def random_noise(bit_data_list):
 
 # input: 2D list of bits, error probability (0-100)%
 def bsc_channel(bit_data_list, error_probability):
-    bsc_processed_list = bit_data_list.copy()
+    bsc_processed_list = copy.deepcopy(bit_data_list)
     for i in range(len(bit_data_list)):
         for j in range(len(bit_data_list[i])):
             if random.uniform(0, 1) <= (error_probability / 100):
@@ -29,7 +30,7 @@ def gilbert_elliot_channel(bit_data_list, error_probability_of_good_state, error
                            switch_to_good_probability, switch_to_bad_probability):
     # True => good state, False => bad state
     current_state = random.choice((True, False))
-    gilbert_elliot_processed_list = bit_data_list.copy()
+    gilbert_elliot_processed_list = copy.deepcopy(bit_data_list)
     for i in range(len(bit_data_list)):
         for j in range(len(bit_data_list[i])):
             if current_state:
