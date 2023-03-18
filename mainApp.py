@@ -19,7 +19,8 @@ for i in range(img.size[0]):
 img.save('./pictures/original_image.bmp')
 
 # simulating channel noise
-noise_data = ChannelNoise.bsc_channel(data, 30)
+# noise_data = ChannelNoise.bsc_channel(data, 30)
+noise_data = ChannelNoise.gilbert_elliot_channel(data, 10, 50, 20, 30)
 
 # after decoding
 img_after = Image.new('1', (data_sequences, single_sequence_length))
