@@ -24,6 +24,9 @@ class Receiver:
             success = False
             while not success:
                 encoded_frame = self.channel.receive_data()
+                # print("test")
+                # print(encoded_frame)
+                # print("test")
                 decoded_frame = None
 
                 match self.ack_coding_type:
@@ -33,12 +36,12 @@ class Receiver:
                         print("Invalid ack coding type")
 
                 if Decoder.check_for_error_parity_bit(encoded_frame, decoded_frame):
+                    # appending decoded frame
                     self.output_bit_data_list_2d.append(decoded_frame)
+                    # ack
                     ack_list = DataGenerator.generate_ack(acknowledgement_bit_length, True)
                     ack_encoded = Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.ParityBit)
                     self.channel.transmit_data(ack_encoded)
-                    # appending decoded frame
-                    self.output_bit_data_list_2d.append(decoded_frame)
                     success = True
                 else:
                     ack_list = DataGenerator.generate_ack(acknowledgement_bit_length, False)

@@ -31,6 +31,9 @@ class Channel:
         self.probability_3 = switch_to_bad_probability
 
     def transmit_data(self, bit_list_1d):
+        # print("test")
+        # print(bit_list_1d)
+        # print("test")
         self.condition_object.acquire()
         match self.noise_type:
             case NoiseTypeEnum.NoiseType.bsc_channel:

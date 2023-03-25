@@ -56,6 +56,7 @@ for i in range(img_after.size[0]):
 img_after.save('./pictures/decoded_image.bmp')
 
 # =========== ARQ TEST ===========
+data = DataGenerator.generate_bit_data(data_sequences, single_sequence_length)
 print("Printing original data...")
 print(data)
 channel = Channel(NoiseType.gilbert_elliot)

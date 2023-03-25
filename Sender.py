@@ -24,7 +24,7 @@ class Sender:
             ack_success = False
 
             while not ack_success:
-                self.channel.transmit_data(self.bit_data_list_2d[i])
+                self.channel.transmit_data(self.encoded_bit_list[i])
                 acknowledgement_encoded = self.channel.receive_data()
                 acknowledgement_decoded = None
 
