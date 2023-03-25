@@ -1,7 +1,5 @@
-import threading
-from time import sleep
-import Encoder
 import Decoder
+import Encoder
 import EncodingTypeEnum
 
 
@@ -23,14 +21,25 @@ class Sender:
 
     def threaded_sender_function(self):
         for i in range(len(self.bit_data_list_2d)):
-            self.channel.transmit_data(self.bit_data_list_2d)
-            acknowledgement_encoded = self.channel.receive_data()
-            acknowledgement_decoded = None
-            match self.ack_coding_type:
-                case EncodingTypeEnum.EncodingType.ParityBit:
-                    acknowledgement_encoded = Decoder.decode_parity_bit_encoded_frame(acknowledgement_encoded)
-                case _:
-                    print("Invalid ack coding type")
-            if Decoder.check_for_error(acknowledgement_encoded, acknowledgement_decoded):
-                print()
-                # encoding matches
+            ack_success = False
+
+            while not ack_success:
+                self.channel.transmit_data(self.bit_data_list_2d[i])
+                acknowledgement_encoded = self.channel.receive_data()
+                acknowledgement_decoded = None
+
+                match self.ack_coding_type:
+                    case EncodingTypeEnum.EncodingType.ParityBit:
+                        acknowledgement_decoded = Decoder.decode_parity_bit_encoded_frame(acknowledgement_encoded)
+                    case _:
+                        print("Invalid ack coding type")
+
+                # do poprawy -> jesli bedzie wiecej typow kodowania
+                if Decoder.check_for_error_parity_bit(acknowledgement_encoded, acknowledgement_decoded):
+                    # encoding matches
+                    ack_success = True
+                    for bit in range(len(acknowledgement_decoded)):
+                        if bit == 0:
+                            ack_success = False
+                else:
+                    ack_success = False

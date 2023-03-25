@@ -13,6 +13,16 @@ def parity_bit_encode(bit_data_list):
     return output_list
 
 
+# encode 1D list with parity bit information
+def parity_bit_encode_single(bit_data_list1d):
+    output_list = copy.deepcopy(bit_data_list1d)
+    parity_check = 0
+    for i in range(len(bit_data_list1d)):
+        parity_check = parity_check ^ bit_data_list1d[i]
+    output_list.append(parity_check)
+    return output_list
+
+
 # =============================== DECODE ===============================
 # returns a new decoded 2D list without parity bit
 def parity_bit_decode(encoded_bit_data_list):

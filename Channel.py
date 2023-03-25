@@ -47,6 +47,9 @@ class Channel:
 
     def receive_data(self):
         self.condition_object.acquire()
+        if len(self.q) == 0:
+            self.condition_object.wait()
         result = self.q.pop()
+        self.condition_object.notify()
         self.condition_object.release()
         return result

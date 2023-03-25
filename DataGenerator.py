@@ -6,3 +6,11 @@ def generate_bit_data(data_sequences, data_sequence_length):
     data[:] = [data[i:i + data_sequence_length] for i in
                range(0, data_sequences * data_sequence_length, data_sequence_length)]
     return data
+
+
+def generate_ack(length, success):
+    if success:
+        data = [1 for _ in range(length)]
+    else:
+        data = [0 for _ in range(length)]
+    return data

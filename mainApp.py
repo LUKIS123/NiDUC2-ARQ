@@ -1,7 +1,16 @@
+from threading import Thread
+
 import PIL.Image as Image
-import DataGenerator
+
 import ChannelNoise
+import DataGenerator
 import ParityBitCoding
+# channel
+from Channel import Channel
+from EncodingTypeEnum import EncodingType
+from NoiseTypeEnum import NoiseType
+from Receiver import Receiver
+from Sender import Sender
 
 # image width == frame length
 data_sequences = 8
@@ -30,7 +39,6 @@ check_parity = ParityBitCoding.check_parity(dec[0])
 print(parity_bit == check_parity)
 # =========== parity bit encoding ===========
 
-
 # simulating channel noise
 # noise_data = ChannelNoise.bsc_channel(data, 30)
 noise_data = ChannelNoise.gilbert_elliot_channel(data, 10, 50, 20, 30)
@@ -46,3 +54,18 @@ for i in range(img_after.size[0]):
 
 # img_after.show()
 img_after.save('./pictures/decoded_image.bmp')
+
+# =========== ARQ TEST ===========
+print("Printing original data...")
+print(data)
+channel = Channel(NoiseType.gilbert_elliot)
+sender = Sender(data, channel, EncodingType.ParityBit, EncodingType.ParityBit)
+receiver = Receiver(channel, EncodingType.ParityBit, EncodingType.ParityBit)
+
+sender_thread = Thread(target=sender.threaded_sender_function)
+receiver_thread = Thread(target=receiver.threaded_receiver_function, args=(len(data), 8))
+sender_thread.start()
+receiver_thread.start()
+sender_thread.join()
+receiver_thread.join()
+print("Threads finished...exiting")
