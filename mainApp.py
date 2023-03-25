@@ -3,9 +3,9 @@ import DataGenerator
 import ChannelNoise
 import ParityBitCoding
 
-# image width
+# image width == frame length
 data_sequences = 8
-# image height
+# image height == frame quantity
 single_sequence_length = 16
 
 data = DataGenerator.generate_bit_data(data_sequences, single_sequence_length)
@@ -22,6 +22,7 @@ img.save('./pictures/original_image.bmp')
 # =========== parity bit encoding ===========
 enc = ParityBitCoding.parity_bit_encode(data)
 parity_bit = ParityBitCoding.get_parity_bit(enc[0])
+# test = ParityBitCoding.parity_bit_decode_single(enc[0])
 # test for parity code
 dec = ParityBitCoding.parity_bit_decode(enc)
 check_parity = ParityBitCoding.check_parity(dec[0])

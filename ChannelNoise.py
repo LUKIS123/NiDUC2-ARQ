@@ -28,6 +28,7 @@ def bsc_channel(bit_data_list, error_probability):
     return bsc_processed_list
 
 
+# input: list of bits, error probability (0-100)%
 def bsc_channel_single(bit_list1d, error_probability):
     output_list = []
     for i in range(len(bit_list1d)):
@@ -71,6 +72,7 @@ def gilbert_elliot_channel(bit_data_list, error_probability_of_good_state, error
     return gilbert_elliot_processed_list
 
 
+# input: list of bits, probability (0-100)%, (0-100)%, (0-100)%, (0-100)%
 def gilbert_elliot_channel_single(bit_list1d, error_probability_of_good_state, error_probability_of_bad_state,
                                   switch_to_good_probability, switch_to_bad_probability):
     # True => good state, False => bad state
