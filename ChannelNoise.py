@@ -5,16 +5,6 @@ import random
 current_state = True
 
 
-def random_noise(bit_data_list):
-    new_list = copy.deepcopy(bit_data_list)
-    for i in range(len(bit_data_list)):
-        for j in range(len(bit_data_list[i])):
-            choice = random.choice((0, 1))
-            if choice == 1:
-                new_list[i][j] = random.choice((0, 1))
-    return new_list
-
-
 # input: 2D list of bits, error probability (0-100)%
 def bsc_channel(bit_data_list, error_probability):
     bsc_processed_list = copy.deepcopy(bit_data_list)
@@ -47,7 +37,7 @@ def gilbert_elliot_channel(bit_data_list, error_probability_of_good_state, error
                            switch_to_good_probability, switch_to_bad_probability):
     # True => good state, False => bad state
     global current_state
-    current_state = random.choice((True, False))
+    # current_state = True
     gilbert_elliot_processed_list = copy.deepcopy(bit_data_list)
 
     for i in range(len(bit_data_list)):
@@ -77,7 +67,7 @@ def gilbert_elliot_channel_single(bit_list1d, error_probability_of_good_state, e
                                   switch_to_good_probability, switch_to_bad_probability):
     # True => good state, False => bad state
     global current_state
-    current_state = random.choice((True, False))
+    # current_state = True
     output_list = []
 
     for i in range(len(bit_list1d)):

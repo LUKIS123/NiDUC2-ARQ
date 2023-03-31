@@ -14,3 +14,15 @@ def generate_ack(length, success):
     else:
         data = [0 for _ in range(length)]
     return data
+
+
+def generate_stop_msg(length):
+    data_list = []
+    current = 1
+    for i in range(length):
+        data_list.append(current)
+        if current == 1:
+            current = 0
+        else:
+            current = 1
+    return data_list

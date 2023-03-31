@@ -9,8 +9,8 @@ class Channel:
     # single frame is being stored in the channel
     q = deque(maxlen=1)
     condition_object = Condition()
-    probability_1 = 5
-    probability_2 = 20
+    probability_1 = 2
+    probability_2 = 10
     probability_3 = 20
     probability_4 = 10
 
@@ -37,7 +37,7 @@ class Channel:
 
         match self.noise_type:
             case NoiseTypeEnum.NoiseType.bsc_channel:
-                self.q.append(ChannelNoise.bsc_channel_single(bit_list_1d, 0.5))
+                self.q.append(ChannelNoise.bsc_channel_single(bit_list_1d, self.probability_1))
             case NoiseTypeEnum.NoiseType.gilbert_elliot:
                 self.q.append(
                     ChannelNoise.gilbert_elliot_channel_single(bit_list_1d, self.probability_1, self.probability_2,
@@ -47,7 +47,7 @@ class Channel:
         # printing transmitted data
         print(self.q[0])
         print("\n")
-        # data
+
         self.condition_object.notify()
         self.condition_object.wait()
         self.condition_object.release()
@@ -60,3 +60,19 @@ class Channel:
         self.condition_object.notify()
         self.condition_object.release()
         return result
+
+    def send_stop_msg(self, msg):
+        self.condition_object.acquire()
+        if len(self.q) == 1:
+            self.q.pop()
+        match self.noise_type:
+            case NoiseTypeEnum.NoiseType.bsc_channel:
+                self.q.append(ChannelNoise.bsc_channel_single(msg, self.probability_1))
+            case NoiseTypeEnum.NoiseType.gilbert_elliot:
+                self.q.append(
+                    ChannelNoise.gilbert_elliot_channel_single(msg, self.probability_1, self.probability_2,
+                                                               self.probability_3, self.probability_4))
+            case _:
+                print("Noise type invalid")
+        self.condition_object.notify()
+        self.condition_object.release()
