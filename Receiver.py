@@ -1,5 +1,3 @@
-from time import sleep
-
 import DataGenerator
 import Decoder
 import Encoder
@@ -24,9 +22,6 @@ class Receiver:
             success = False
             while not success:
                 encoded_frame = self.channel.receive_data()
-                # print("test")
-                # print(encoded_frame)
-                # print("test")
                 decoded_frame = None
 
                 match self.ack_coding_type:
@@ -35,6 +30,7 @@ class Receiver:
                     case _:
                         print("Invalid ack coding type")
 
+                ack_list = None
                 if Decoder.check_for_error_parity_bit(encoded_frame, decoded_frame):
                     # appending decoded frame
                     self.output_bit_data_list_2d.append(decoded_frame)
@@ -49,3 +45,9 @@ class Receiver:
                     self.channel.transmit_data(ack_encoded)
         print("Printing received data...")
         print(self.output_bit_data_list_2d)
+
+# Problem jest nastepujacy -> nalezy zmienic format wiadomosci ack poniewaz
+# jesli uzywamy samych jedynek jako perawda to wedy latwo dochodzi do przeklaman przez kodowanie bitem parzystosci
+# przez to jeli zostanie przeklamana jedna jedynka, receiver potraktuje to jako fałsz
+# przetla nie przechodzi i idzie jedna ramka przez cały czas
+# wszytsko sie psuje

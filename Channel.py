@@ -1,6 +1,6 @@
-from threading import *
-from time import sleep
 from collections import deque
+from threading import *
+
 import ChannelNoise
 import NoiseTypeEnum
 
@@ -9,10 +9,10 @@ class Channel:
     # single frame is being stored in the channel
     q = deque(maxlen=1)
     condition_object = Condition()
-    probability_1 = 50
-    probability_2 = 50
-    probability_3 = 50
-    probability_4 = 50
+    probability_1 = 5
+    probability_2 = 20
+    probability_3 = 20
+    probability_4 = 10
 
     def __init__(self, channel_type):
         self.noise_type = channel_type
@@ -31,10 +31,10 @@ class Channel:
         self.probability_3 = switch_to_bad_probability
 
     def transmit_data(self, bit_list_1d):
-        # print("test")
-        # print(bit_list_1d)
-        # print("test")
         self.condition_object.acquire()
+        if len(self.q) == 1:
+            self.condition_object.wait()
+
         match self.noise_type:
             case NoiseTypeEnum.NoiseType.bsc_channel:
                 self.q.append(ChannelNoise.bsc_channel_single(bit_list_1d, 0.5))
@@ -44,6 +44,10 @@ class Channel:
                                                                self.probability_3, self.probability_4))
             case _:
                 print("Noise type invalid")
+        # printing transmitted data
+        print(self.q[0])
+        print("\n")
+        # data
         self.condition_object.notify()
         self.condition_object.wait()
         self.condition_object.release()

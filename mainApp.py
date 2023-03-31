@@ -1,3 +1,4 @@
+import sys
 from threading import Thread
 
 import PIL.Image as Image
@@ -60,13 +61,16 @@ data = DataGenerator.generate_bit_data(data_sequences, single_sequence_length)
 print("Printing original data...")
 print(data)
 channel = Channel(NoiseType.gilbert_elliot)
-sender = Sender(data, channel, EncodingType.ParityBit, EncodingType.ParityBit)
+sender = Sender(data, channel, EncodingType.ParityBit, EncodingType.ParityBit, 0.75)
 receiver = Receiver(channel, EncodingType.ParityBit, EncodingType.ParityBit)
 
 sender_thread = Thread(target=sender.threaded_sender_function)
 receiver_thread = Thread(target=receiver.threaded_receiver_function, args=(len(data), 8))
 sender_thread.start()
 receiver_thread.start()
+
+# shutting down threads
 sender_thread.join()
 receiver_thread.join()
 print("Threads finished...exiting")
+sys.exit()

@@ -10,21 +10,25 @@ class Sender:
     channel = None
     frame_coding_type = None
     ack_coding_type = None
+    ack_error_toleration = None
 
-    def __init__(self, bit_list_2d, channel, frame_coding_type, ack_coding_type):
+    def __init__(self, bit_list_2d, channel, frame_coding_type, ack_coding_type, ack_error_toleration_percentage):
         self.bit_data_list_2d = bit_list_2d
         self.channel = channel
         self.frame_coding_type = frame_coding_type
         self.ack_coding_type = ack_coding_type
         # encoded 2D data list
         self.encoded_bit_list = Encoder.encode_frame(bit_list_2d, self.frame_coding_type)
+        self.ack_error_toleration = ack_error_toleration_percentage
 
     def threaded_sender_function(self):
-        for i in range(len(self.bit_data_list_2d)):
+        for index in range(len(self.bit_data_list_2d)):
             ack_success = False
 
             while not ack_success:
-                self.channel.transmit_data(self.encoded_bit_list[i])
+                print(f"Index: {index}")
+                self.channel.transmit_data(self.encoded_bit_list[index])
+
                 acknowledgement_encoded = self.channel.receive_data()
                 acknowledgement_decoded = None
 
@@ -38,8 +42,11 @@ class Sender:
                 if Decoder.check_for_error_parity_bit(acknowledgement_encoded, acknowledgement_decoded):
                     # encoding matches
                     ack_success = True
+                    zero_count = 0
                     for bit in range(len(acknowledgement_decoded)):
-                        if bit == 0:
-                            ack_success = False
+                        if acknowledgement_decoded[bit] == 0:
+                            zero_count += 1
+                    if zero_count >= self.ack_error_toleration * len(acknowledgement_decoded):
+                        ack_success = False
                 else:
                     ack_success = False
