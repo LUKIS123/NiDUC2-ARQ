@@ -1,3 +1,5 @@
+import copy
+
 import DataGenerator
 import Decoder
 import Encoder
@@ -10,6 +12,9 @@ class Receiver:
     frame_coding_type = None
     ack_coding_type = None
     stop_msg = None
+    previous_ack = None
+    ack_success = None
+    ack_fail = None
 
     def __init__(self, channel, frame_coding_type, ack_coding_type):
         self.channel = channel
@@ -19,6 +24,8 @@ class Receiver:
     def threaded_receiver_function(self, frame_count, acknowledgement_bit_length):
         self.stop_msg = Encoder.encode_frame(DataGenerator.generate_stop_msg(2 * acknowledgement_bit_length),
                                              self.ack_coding_type)
+        self.ack_success = DataGenerator.generate_ack(acknowledgement_bit_length, True)
+        self.ack_fail = DataGenerator.generate_ack(acknowledgement_bit_length, False)
         frame_index = 0
         while frame_index < frame_count:
             success = False
@@ -26,6 +33,7 @@ class Receiver:
             while not success:
                 encoded_frame = self.channel.receive_data()
                 decoded_frame = None
+                ack_list = None
                 ack_encoded = None
 
                 match self.ack_coding_type:
@@ -33,28 +41,35 @@ class Receiver:
                     case EncodingTypeEnum.EncodingType.ParityBit:
                         decoded_frame = Decoder.decode_parity_bit_encoded_frame(encoded_frame)
                         if Decoder.check_for_error_parity_bit(encoded_frame, decoded_frame):
-                            ack_list = DataGenerator.generate_ack(acknowledgement_bit_length, True)
+                            ack_list = copy.deepcopy(self.ack_success)
                             ack_encoded = Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.ParityBit)
                             success = True
                         else:
-                            ack_list = DataGenerator.generate_ack(acknowledgement_bit_length, False)
+                            ack_list = copy.deepcopy(self.ack_fail)
                             ack_encoded = Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.ParityBit)
 
                     case _:
                         print("Invalid ack coding type")
                 if success:
-                    # appending decoded frame if success
-                    if not self.check_if_recurrence(decoded_frame, frame_index):
+                    # appending decoded frame if success, checking for reoccurrence
+                    if self.previous_ack == self.ack_success:
+                        if not self.check_if_recurrence(decoded_frame, frame_index):
+                            # success, frame is appended
+                            self.output_bit_data_list_2d.append(decoded_frame)
+                            frame_index += 1
+                    else:
+                        # success, frame is appended
                         self.output_bit_data_list_2d.append(decoded_frame)
                         frame_index += 1
                 # transmitting back acknowledgment
                 self.channel.transmit_data(ack_encoded)
+                # saving ack of this iteration
+                self.previous_ack = ack_list
 
         print("\nPrinting received data...")
         print(self.output_bit_data_list_2d)
-        self.channel.send_stop_msg(self.stop_msg)
-
         # acknowledge the receiver to stop receiving
+        self.channel.send_stop_msg(self.stop_msg)
 
     # if the acknowledgment gets corrupted the receiver will send the identical frames
     def check_if_recurrence(self, decoded_frame, index):

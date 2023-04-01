@@ -34,7 +34,7 @@ receiver_thread.start()
 # shutting down threads
 receiver_thread.join()
 sender_thread.join()
-print("Threads finished...exiting")
+print("Threads finished... Exiting...")
 
 # generating images
 img = Image.new('1', (data_sequences, single_sequence_length))
