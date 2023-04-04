@@ -9,9 +9,9 @@ class Channel:
     # single frame is being stored in the channel
     q = deque(maxlen=1)
     condition_object = Condition()
-    probability_1 = 2
+    probability_1 = 1
     probability_2 = 10
-    probability_3 = 20
+    probability_3 = 5
     probability_4 = 10
 
     def __init__(self, channel_type):
@@ -32,7 +32,7 @@ class Channel:
 
     def transmit_data(self, bit_list_1d):
         self.condition_object.acquire()
-        if len(self.q) == 1:
+        if self.q:
             self.condition_object.wait()
 
         match self.noise_type:
@@ -54,7 +54,7 @@ class Channel:
 
     def receive_data(self):
         self.condition_object.acquire()
-        if len(self.q) == 0:
+        if not self.q:
             self.condition_object.wait()
         result = self.q.pop()
         self.condition_object.notify()
@@ -63,7 +63,7 @@ class Channel:
 
     def send_stop_msg(self, msg):
         self.condition_object.acquire()
-        if len(self.q) == 1:
+        if self.q:
             self.q.pop()
         match self.noise_type:
             case NoiseTypeEnum.NoiseType.bsc_channel:

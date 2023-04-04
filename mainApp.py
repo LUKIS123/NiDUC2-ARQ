@@ -16,6 +16,9 @@ data_sequences = 8
 single_sequence_length = 16
 
 # =========== ARQ TEST ===========
+# TODO: wczytywanie z pliku dnych (jedna ramka 100 bajtow czyli 800bit) + naglowek i stopka
+# do zrobienia naglowek ramki z numerowaniem
+# sprwdzanie poprawnosci poprzez liczenie md5 z pliku zrodlowego i pozniej wynikowy....
 data = DataGenerator.generate_bit_data(data_sequences, single_sequence_length)
 
 print("Printing original data...")
@@ -27,7 +30,7 @@ sender = Sender(data, channel, EncodingType.ParityBit, EncodingType.ParityBit, 0
 receiver = Receiver(channel, EncodingType.ParityBit, EncodingType.ParityBit)
 
 sender_thread = Thread(target=sender.threaded_sender_function)
-receiver_thread = Thread(target=receiver.threaded_receiver_function, args=(len(data), 8))
+receiver_thread = Thread(target=receiver.threaded_receiver_function, args=(len(data), 4))
 sender_thread.start()
 receiver_thread.start()
 

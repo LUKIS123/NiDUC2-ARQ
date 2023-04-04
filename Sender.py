@@ -32,7 +32,7 @@ class Sender:
             self.ack_success = False
 
             while not self.ack_success:
-                print(f"Index: {index}")
+                print(f"Frame: {index + 1}")
                 self.channel.transmit_data(self.encoded_bit_list[index])
 
                 acknowledgement_encoded = self.channel.receive_data()
@@ -44,9 +44,10 @@ class Sender:
                         self.acknowledgement_decoded = Decoder.decode_parity_bit_encoded_frame(acknowledgement_encoded)
 
                         # checking if acknowledgement is stop message
-                        if index > 1 and self.check_for_stop_msg():
-                            self.stop = True
-                            break
+                        if index > 1:
+                            if self.check_for_stop_msg():
+                                self.stop = True
+                                break
                         elif index == 1:
                             self.regular_acknowledgement_length = len(self.acknowledgement_decoded)
                         # checking done
@@ -69,14 +70,15 @@ class Sender:
     def check_for_stop_msg(self):
         one_count = 0
         zero_count = 0
-        if len(self.acknowledgement_decoded) < self.regular_acknowledgement_length:
+        if len(self.acknowledgement_decoded) <= self.regular_acknowledgement_length:
             return False
-        for i in range(len(self.acknowledgement_decoded)):
-            if self.acknowledgement_decoded[i] == 1:
-                one_count += 1
-            else:
-                zero_count += 1
-        if abs(one_count - zero_count) <= 2:
-            return True
         else:
-            return False
+            for i in range(len(self.acknowledgement_decoded)):
+                if self.acknowledgement_decoded[i] == 1:
+                    one_count += 1
+                else:
+                    zero_count += 1
+            if abs(one_count - zero_count) <= 2:
+                return True
+            else:
+                return False
