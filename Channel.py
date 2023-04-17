@@ -9,9 +9,9 @@ class Channel:
     # single frame is being stored in the channel
     q = deque(maxlen=1)
     condition_object = Condition()
-    probability_1 = 1
+    probability_1 = 0.5
     probability_2 = 10
-    probability_3 = 5
+    probability_3 = 1
     probability_4 = 10
 
     def __init__(self, channel_type):

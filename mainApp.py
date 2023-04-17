@@ -3,6 +3,7 @@ from threading import Thread
 
 import PIL.Image as Image
 
+import ByteUtils
 import DataGenerator
 from Channel import Channel
 from EncodingTypeEnum import EncodingType
@@ -10,15 +11,34 @@ from NoiseTypeEnum import NoiseType
 from Receiver import Receiver
 from Sender import Sender
 
-# image width == frame length
-data_sequences = 8
-# image height == frame quantity
-single_sequence_length = 16
+byte_array = ByteUtils.generate_bytes(800)
+ByteUtils.save_byte_file(byte_array)
 
+read_bytes = ByteUtils.read_bytes_from_file("my_file.txt")
+print("===========================================================")
+read_bytes_length = 8 * len(read_bytes)
+print(read_bytes)
+print("===========================================================")
+test_123 = list(map(int, bin(int.from_bytes(read_bytes, byteorder="big")).strip('0b')))
+
+for i in range(read_bytes_length - len(test_123)):
+    test_123.insert(0, 0)
+
+print(test_123)
+print(len(test_123))
+print("===========================================================")
+
+# ===============================================================
+# image width == frame quantity
+data_sequences = 400
+# image height == frame length
+single_sequence_length = 800
 # =========== ARQ TEST ===========
+
 # TODO: wczytywanie z pliku dnych (jedna ramka 100 bajtow czyli 800bit) + naglowek i stopka
 # do zrobienia naglowek ramki z numerowaniem
 # sprwdzanie poprawnosci poprzez liczenie md5 z pliku zrodlowego i pozniej wynikowy....
+
 data = DataGenerator.generate_bit_data(data_sequences, single_sequence_length)
 
 print("Printing original data...")
