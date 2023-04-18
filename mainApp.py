@@ -3,11 +3,10 @@ from threading import Thread
 
 import PIL.Image as Image
 
-import ByteUtils
 import DataGenerator
 from Channel import Channel
-from EncodingTypeEnum import EncodingType
-from NoiseTypeEnum import NoiseType
+from Enums.EncodingTypeEnum import EncodingType
+from Enums.NoiseTypeEnum import NoiseType
 from Receiver import Receiver
 from Sender import Sender
 
@@ -25,14 +24,13 @@ from Sender import Sender
 
 # ===============================================================
 # image width == frame quantity
-data_sequences = 400
+data_sequences = 16
 # image height == frame length
-single_sequence_length = 800
+single_sequence_length = 100
 # =========== ARQ TEST ===========
 
-# TODO: wczytywanie z pliku dnych (jedna ramka 100 bajtow czyli 800bit) + naglowek i stopka
+# TODO: jedna ramka 100 bajtow czyli 800bit + naglowek i stopka
 # do zrobienia naglowek ramki z numerowaniem
-# sprwdzanie poprawnosci poprzez liczenie md5 z pliku zrodlowego i pozniej wynikowy....
 
 data = DataGenerator.generate_bit_data(data_sequences, single_sequence_length)
 

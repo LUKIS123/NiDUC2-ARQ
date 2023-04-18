@@ -2,7 +2,7 @@ from collections import deque
 from threading import *
 
 import ChannelNoise
-import NoiseTypeEnum
+from Enums import NoiseTypeEnum
 
 
 class Channel:

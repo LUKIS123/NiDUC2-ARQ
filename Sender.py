@@ -1,6 +1,6 @@
 import Decoder
 import Encoder
-import EncodingTypeEnum
+from Enums import EncodingTypeEnum
 
 
 class Sender:

@@ -3,7 +3,7 @@ import copy
 import DataGenerator
 import Decoder
 import Encoder
-import EncodingTypeEnum
+from Enums import EncodingTypeEnum
 
 
 class Receiver:
@@ -85,4 +85,4 @@ class Receiver:
 # TODO: dodac funckje ktora bedzie porownywala wiadomosc z poprzednia, jesli sa zgodne w 100% to pomin => done
 #       => mozliwe tez ze trzeba bedzie dodac numerowanie pakietow do kodera
 
-# do przemyslenia => frame count zastapic jakims framem oznaczajacym koniec transmisji
+# TODO: do przemyslenia => frame count zastapic jakims framem oznaczajacym koniec transmisji

@@ -1,4 +1,4 @@
-import EncodingTypeEnum
+from Enums import EncodingTypeEnum
 import ParityBitCoding
 
 
