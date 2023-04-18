@@ -9,38 +9,31 @@ from Enums.EncodingTypeEnum import EncodingType
 from Enums.NoiseTypeEnum import NoiseType
 from Receiver import Receiver
 from Sender import Sender
-
-# ======================== FILE UTILS ================================
-# byte_array = ByteUtils.generate_bytes(800)
-# ByteUtils.save_byte_file(byte_array, "data_file.txt")
-# print(byte_array)
-# bin_input = ByteUtils.get_binary_output_from_file("data_file.txt")
-# print(bin_input)
-# print(len(bin_input))
-# print(type(bin_input))
-# t = ByteUtils.binary_to_byte_arr(bin_input)
-# print(t)
-# ======================== FILE UTILS ================================
+import ByteUtils
 
 # ===============================================================
 # image width == frame quantity
 data_sequences = 16
 # image height == frame length
-single_sequence_length = 100
+single_sequence_length = 800
 # =========== ARQ TEST ===========
 
 # TODO: jedna ramka 100 bajtow czyli 800bit + naglowek i stopka
 # do zrobienia naglowek ramki z numerowaniem
 
 data = DataGenerator.generate_bit_data(data_sequences, single_sequence_length)
+# md5 poczatkowe
+src_hash = ByteUtils.calculate_md5_hash(ByteUtils.binary_to_byte_arr(ByteUtils.flatten_2d_list(data)))
 
 print("Printing original data...")
 print(data)
 print("\n")
 
 channel = Channel(NoiseType.gilbert_elliot)
-sender = Sender(data, channel, EncodingType.ParityBit, EncodingType.ParityBit, 0.75, 16)
-receiver = Receiver(channel, EncodingType.ParityBit, EncodingType.ParityBit, 16)
+# sender = Sender(data, channel, EncodingType.ParityBit, EncodingType.ParityBit, 0.75, 16)
+# receiver = Receiver(channel, EncodingType.ParityBit, EncodingType.ParityBit, 16)
+sender = Sender(data, channel, EncodingType.CRC_32, EncodingType.CRC_32, 0.75, 16)
+receiver = Receiver(channel, EncodingType.CRC_32, EncodingType.CRC_32, 16)
 
 sender_thread = Thread(target=sender.threaded_sender_function)
 receiver_thread = Thread(target=receiver.threaded_receiver_function, args=(len(data), 4))
@@ -61,12 +54,20 @@ for i in range(img.size[0]):
 img.save('./pictures/original_image.bmp')
 
 out = receiver.output_bit_data_list_2d
+
 img_after = Image.new('1', (data_sequences, single_sequence_length))
 pixels_after = img_after.load()
 for i in range(img_after.size[0]):
     for j in range(img_after.size[1]):
         pixels_after[i, j] = out[i][j]
 img_after.save('./pictures/decoded_image.bmp')
+
+print("MD5...")
+# md5 poczatkowe
+out_hash = ByteUtils.calculate_md5_hash(ByteUtils.binary_to_byte_arr(ByteUtils.flatten_2d_list(out)))
+print(src_hash)
+print(out_hash)
+print(src_hash == out_hash)
 
 sys.exit()
 

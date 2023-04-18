@@ -9,9 +9,9 @@ class Channel:
     # single frame is being stored in the channel
     q = deque(maxlen=1)
     condition_object = Condition()
-    probability_1 = 0.5
-    probability_2 = 10
-    probability_3 = 1
+    probability_1 = 0.0001
+    probability_2 = 0.001
+    probability_3 = 10
     probability_4 = 10
 
     def __init__(self, channel_type):
@@ -28,7 +28,7 @@ class Channel:
         self.probability_1 = error_probability_of_good_state
         self.probability_2 = error_probability_of_bad_state
         self.probability_3 = switch_to_good_probability
-        self.probability_3 = switch_to_bad_probability
+        self.probability_4 = switch_to_bad_probability
 
     def transmit_data(self, bit_list_1d):
         self.condition_object.acquire()

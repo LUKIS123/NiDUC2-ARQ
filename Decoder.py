@@ -1,6 +1,7 @@
 import copy
 
-import ParityBitCoding
+from Coding import ParityBitCoding
+from Coding import CRC32Coding
 
 
 def decode_parity_bit_encoded_frame(bit_data_list_1d):
@@ -13,6 +14,9 @@ def check_for_error_parity_bit(bit_data_list1d_encoded, bit_data_list1d_decoded)
     return parity_decoded == parity_received
 
 
-# niepotrzebne
-def get_parity_bit_of_decoded(bit_data_list1d_decoded):
-    return ParityBitCoding.get_parity_bit(bit_data_list1d_decoded)
+def decode_crc32_encoded_frame_and_check_sum(bit_data_list_1d):
+    return CRC32Coding.decode_crc32_and_check_errors(bit_data_list_1d)
+
+
+def check_for_error_crc32(bit_data_list1d_decoded, crc32_checksum):
+    return CRC32Coding.check_crc32_match(bit_data_list1d_decoded, crc32_checksum)

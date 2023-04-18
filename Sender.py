@@ -13,6 +13,7 @@ class Sender:
     ack_coding_type = None
     ack_error_toleration = None
     ack_success = None
+    ack_match = None
     acknowledgement_decoded = None
     regular_acknowledgement_length = None
     stop = False
@@ -61,19 +62,44 @@ class Sender:
                         # checking done
 
                         if Decoder.check_for_error_parity_bit(acknowledgement_encoded, self.acknowledgement_decoded):
-                            # encoding matches
-                            self.ack_success = True
-                            zero_count = 0
-                            for bit in range(len(self.acknowledgement_decoded)):
-                                if self.acknowledgement_decoded[bit] == 0:
-                                    zero_count += 1
-                            if zero_count >= self.ack_error_toleration * len(self.acknowledgement_decoded):
-                                self.ack_success = False
+                            self.ack_match = True
                         else:
                             self.ack_success = False
+                            self.ack_match = False
+
+                    case EncodingTypeEnum.EncodingType.CRC_32:
+                        split_data = Decoder.decode_crc32_encoded_frame_and_check_sum(
+                            acknowledgement_encoded)
+                        self.acknowledgement_decoded = split_data[0]
+                        crc32_checksum = split_data[1]
+
+                        # checking if acknowledgement is stop message
+                        if index > 1:
+                            if self.check_for_stop_msg():
+                                self.stop = True
+                                break
+                        elif index == 1:
+                            self.regular_acknowledgement_length = len(self.acknowledgement_decoded)
+                        # checking done
+
+                        if Decoder.check_for_error_crc32(self.acknowledgement_decoded, crc32_checksum):
+                            self.ack_match = True
+                        else:
+                            self.ack_success = False
+                            self.ack_match = False
 
                     case _:
                         print("Invalid ack coding type")
+
+                if self.ack_match:
+                    # encoding matches
+                    self.ack_success = True
+                    zero_count = 0
+                    for bit in range(len(self.acknowledgement_decoded)):
+                        if self.acknowledgement_decoded[bit] == 0:
+                            zero_count += 1
+                    if zero_count >= self.ack_error_toleration * len(self.acknowledgement_decoded):
+                        self.ack_success = False
 
     def check_for_stop_msg(self):
         one_count = 0
