@@ -94,11 +94,11 @@ class Sender:
                 if self.ack_match:
                     # encoding matches
                     self.ack_success = True
-                    zero_count = 0
+                    one_count = 0
                     for bit in range(len(self.acknowledgement_decoded)):
-                        if self.acknowledgement_decoded[bit] == 0:
-                            zero_count += 1
-                    if zero_count >= self.ack_error_toleration * len(self.acknowledgement_decoded):
+                        if self.acknowledgement_decoded[bit] == 1:
+                            one_count += 1
+                    if one_count < self.ack_error_toleration * len(self.acknowledgement_decoded):
                         self.ack_success = False
 
     def check_for_stop_msg(self):

@@ -1,6 +1,5 @@
 import sys
 from threading import Thread
-
 import PIL.Image as Image
 
 import DataGenerator
@@ -32,7 +31,7 @@ print("\n")
 
 channel = Channel(NoiseType.gilbert_elliot)
 
-sender = Sender(data, channel, EncodingType.ParityBit, EncodingType.ParityBit, 0.75, 16)
+sender = Sender(data, channel, EncodingType.ParityBit, EncodingType.ParityBit, 1, 16)
 receiver = Receiver(channel, EncodingType.ParityBit, EncodingType.ParityBit, 16)
 # sender = Sender(data, channel, EncodingType.CRC_32, EncodingType.CRC_32, 0.75, 16)
 # receiver = Receiver(channel, EncodingType.CRC_32, EncodingType.CRC_32, 16)
