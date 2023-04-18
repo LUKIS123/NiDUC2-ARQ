@@ -11,22 +11,17 @@ from NoiseTypeEnum import NoiseType
 from Receiver import Receiver
 from Sender import Sender
 
-byte_array = ByteUtils.generate_bytes(800)
-ByteUtils.save_byte_file(byte_array)
-
-read_bytes = ByteUtils.read_bytes_from_file("my_file.txt")
-print("===========================================================")
-read_bytes_length = 8 * len(read_bytes)
-print(read_bytes)
-print("===========================================================")
-test_123 = list(map(int, bin(int.from_bytes(read_bytes, byteorder="big")).strip('0b')))
-
-for i in range(read_bytes_length - len(test_123)):
-    test_123.insert(0, 0)
-
-print(test_123)
-print(len(test_123))
-print("===========================================================")
+# ======================== FILE UTILS ================================
+# byte_array = ByteUtils.generate_bytes(800)
+# ByteUtils.save_byte_file(byte_array, "data_file.txt")
+# print(byte_array)
+# bin_input = ByteUtils.get_binary_output_from_file("data_file.txt")
+# print(bin_input)
+# print(len(bin_input))
+# print(type(bin_input))
+# t = ByteUtils.binary_to_byte_arr(bin_input)
+# print(t)
+# ======================== FILE UTILS ================================
 
 # ===============================================================
 # image width == frame quantity
