@@ -11,20 +11,17 @@ class Sender:
     frame_sequence_util = None
     frame_coding_type = None
     ack_coding_type = None
-    ack_error_toleration = None
     ack_success = None
     ack_match = None
     acknowledgement_decoded = None
     regular_acknowledgement_length = None
     stop = False
 
-    def __init__(self, bit_list_2d, channel, frame_coding_type, ack_coding_type, ack_error_toleration_percentage,
-                 heading_len):
+    def __init__(self, bit_list_2d, channel, frame_coding_type, ack_coding_type, heading_len):
         self.bit_data_list_2d = bit_list_2d
         self.channel = channel
         self.frame_coding_type = frame_coding_type
         self.ack_coding_type = ack_coding_type
-        self.ack_error_toleration = ack_error_toleration_percentage
         # Narzedzie do numerowania ramek
         self.frame_sequence_util = FrameSequencing(heading_len)
         # encoded 2D data list
@@ -98,7 +95,7 @@ class Sender:
                     for bit in range(len(self.acknowledgement_decoded)):
                         if self.acknowledgement_decoded[bit] == 1:
                             one_count += 1
-                    if one_count < self.ack_error_toleration * len(self.acknowledgement_decoded):
+                    if one_count < len(self.acknowledgement_decoded):
                         self.ack_success = False
 
     def check_for_stop_msg(self):
