@@ -1,12 +1,14 @@
 import Decoder
 import Encoder
 from Enums import EncodingTypeEnum
+from FrameSequencingUtils import FrameSequencing
 
 
 class Sender:
     bit_data_list_2d = None
     encoded_bit_list = None
     channel = None
+    frame_sequence_util = None
     frame_coding_type = None
     ack_coding_type = None
     ack_error_toleration = None
@@ -15,12 +17,15 @@ class Sender:
     regular_acknowledgement_length = None
     stop = False
 
-    def __init__(self, bit_list_2d, channel, frame_coding_type, ack_coding_type, ack_error_toleration_percentage):
+    def __init__(self, bit_list_2d, channel, frame_coding_type, ack_coding_type, ack_error_toleration_percentage,
+                 heading_len):
         self.bit_data_list_2d = bit_list_2d
         self.channel = channel
         self.frame_coding_type = frame_coding_type
         self.ack_coding_type = ack_coding_type
         self.ack_error_toleration = ack_error_toleration_percentage
+        # Narzedzie do numerowania ramek
+        self.frame_sequence_util = FrameSequencing(heading_len)
         # encoded 2D data list
         self.encoded_bit_list = Encoder.encode_frame(bit_list_2d, self.frame_coding_type)
 
@@ -33,7 +38,10 @@ class Sender:
 
             while not self.ack_success:
                 print(f"Frame: {index + 1}")
-                self.channel.transmit_data(self.encoded_bit_list[index])
+                encoded_frame = self.encoded_bit_list[index]
+
+                self.frame_sequence_util.set_frame_number(index)
+                self.channel.transmit_data(self.frame_sequence_util.append_sequence_number(encoded_frame))
 
                 acknowledgement_encoded = self.channel.receive_data()
                 self.acknowledgement_decoded = None

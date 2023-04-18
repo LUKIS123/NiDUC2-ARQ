@@ -4,11 +4,13 @@ import DataGenerator
 import Decoder
 import Encoder
 from Enums import EncodingTypeEnum
+from FrameSequencingUtils import FrameSequencing
 
 
 class Receiver:
     output_bit_data_list_2d = []
     channel = None
+    frame_sequence_util = None
     frame_coding_type = None
     ack_coding_type = None
     stop_msg = None
@@ -16,10 +18,11 @@ class Receiver:
     ack_success = None
     ack_fail = None
 
-    def __init__(self, channel, frame_coding_type, ack_coding_type):
+    def __init__(self, channel, frame_coding_type, ack_coding_type, heading_len):
         self.channel = channel
         self.frame_coding_type = frame_coding_type
         self.ack_coding_type = ack_coding_type
+        self.frame_sequence_util = FrameSequencing(heading_len)
 
     def threaded_receiver_function(self, frame_count, acknowledgement_bit_length):
         self.stop_msg = Encoder.encode_frame(DataGenerator.generate_stop_msg(2 * acknowledgement_bit_length),
@@ -29,9 +32,22 @@ class Receiver:
         frame_index = 0
         while frame_index < frame_count:
             success = False
-
+            self.frame_sequence_util.set_frame_number(frame_index)
             while not success:
-                encoded_frame = self.channel.receive_data()
+                encoded_frame_received = self.channel.receive_data()
+                # Obsluga sekwencjonowania ramek
+                frame_data = self.frame_sequence_util.split_sequence_from_frame(encoded_frame_received)
+                frame_number_received = self.frame_sequence_util.get_int_from_heading(frame_data[0])
+
+                if frame_number_received != frame_index:
+                    ack_list = copy.deepcopy(self.ack_fail)
+                    self.channel.transmit_data(Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.ParityBit))
+                    # saving ack of this iteration
+                    self.previous_ack = ack_list
+                    continue
+
+                encoded_frame = frame_data[1]
+                # Jesli numer ramki zgadza sie z licznikiem petli, przejdz dalej
                 decoded_frame = None
                 ack_list = None
                 ack_encoded = None
@@ -51,16 +67,18 @@ class Receiver:
                     case _:
                         print("Invalid ack coding type")
                 if success:
-                    # appending decoded frame if success, checking for reoccurrence
-                    if self.previous_ack == self.ack_success:
-                        if not self.check_if_recurrence(decoded_frame, frame_index):
-                            # success, frame is appended
-                            self.output_bit_data_list_2d.append(decoded_frame)
-                            frame_index += 1
-                    else:
-                        # success, frame is appended
-                        self.output_bit_data_list_2d.append(decoded_frame)
-                        frame_index += 1
+                    self.output_bit_data_list_2d.append(decoded_frame)
+                    frame_index += 1
+                    # # appending decoded frame if success, checking for reoccurrence
+                    # if self.previous_ack == self.ack_success:
+                    #     if not self.check_if_recurrence(decoded_frame, frame_index):
+                    #         # success, frame is appended
+                    #         self.output_bit_data_list_2d.append(decoded_frame)
+                    #         frame_index += 1
+                    # else:
+                    #     # success, frame is appended
+                    #     self.output_bit_data_list_2d.append(decoded_frame)
+                    #     frame_index += 1
                 # transmitting back acknowledgment
                 self.channel.transmit_data(ack_encoded)
                 # saving ack of this iteration

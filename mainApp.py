@@ -39,8 +39,8 @@ print(data)
 print("\n")
 
 channel = Channel(NoiseType.gilbert_elliot)
-sender = Sender(data, channel, EncodingType.ParityBit, EncodingType.ParityBit, 0.75)
-receiver = Receiver(channel, EncodingType.ParityBit, EncodingType.ParityBit)
+sender = Sender(data, channel, EncodingType.ParityBit, EncodingType.ParityBit, 0.75, 16)
+receiver = Receiver(channel, EncodingType.ParityBit, EncodingType.ParityBit, 16)
 
 sender_thread = Thread(target=sender.threaded_sender_function)
 receiver_thread = Thread(target=receiver.threaded_receiver_function, args=(len(data), 4))

@@ -18,7 +18,7 @@ class FrameSequencing:
         for i in range(addendum_len):
             binary_seq.insert(0, 0)
 
-        self.frame_number += 1
+        # self.frame_number += 1
         return [*binary_seq, *list_1d]
 
     def split_sequence_from_frame(self, list_1d):
@@ -34,6 +34,9 @@ class FrameSequencing:
             result += heading_list[i] * pow(2, weight)
             weight += 1
         return result
+
+    def set_frame_number(self, number):
+        self.frame_number = number
 
 # seq = FrameSequencingUtils.FrameSequencing(16)
 # t = seq.append_sequence_number([1, 1, 1, 1, 1, 1])
