@@ -13,13 +13,14 @@ import ByteUtils
 
 # ===============================================================
 # image width == frame quantity
-data_sequences = 16
+data_sequences = 160
 # image height == frame length
-single_sequence_length = 800
+single_sequence_length = 8000
 # =========== ARQ TEST ===========
 
 # TODO: jedna ramka 100 bajtow czyli 800bit + naglowek i stopka
 # do zrobienia naglowek ramki z numerowaniem
+# TODO: Zrobic aby wiadomosc ACK przesylala ktora rameczke chce z powrotem (aktualnie rozwiazanie powoduje zapetlanie sie jesli w jednym w odbiornikow przeskoczy indeks)
 
 data = DataGenerator.generate_bit_data(data_sequences, single_sequence_length)
 # md5 poczatkowe
@@ -30,10 +31,11 @@ print(data)
 print("\n")
 
 channel = Channel(NoiseType.gilbert_elliot)
-# sender = Sender(data, channel, EncodingType.ParityBit, EncodingType.ParityBit, 0.75, 16)
-# receiver = Receiver(channel, EncodingType.ParityBit, EncodingType.ParityBit, 16)
-sender = Sender(data, channel, EncodingType.CRC_32, EncodingType.CRC_32, 0.75, 16)
-receiver = Receiver(channel, EncodingType.CRC_32, EncodingType.CRC_32, 16)
+
+sender = Sender(data, channel, EncodingType.ParityBit, EncodingType.ParityBit, 0.75, 16)
+receiver = Receiver(channel, EncodingType.ParityBit, EncodingType.ParityBit, 16)
+# sender = Sender(data, channel, EncodingType.CRC_32, EncodingType.CRC_32, 0.75, 16)
+# receiver = Receiver(channel, EncodingType.CRC_32, EncodingType.CRC_32, 16)
 
 sender_thread = Thread(target=sender.threaded_sender_function)
 receiver_thread = Thread(target=receiver.threaded_receiver_function, args=(len(data), 4))
