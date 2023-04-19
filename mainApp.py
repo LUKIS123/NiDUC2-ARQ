@@ -32,10 +32,10 @@ print("\n")
 
 channel = Channel(NoiseType.gilbert_elliot)
 
-sender = Sender(data, channel, EncodingType.ParityBit, EncodingType.ParityBit, 16)
-receiver = Receiver(channel, EncodingType.ParityBit, EncodingType.ParityBit, 16)
-# sender = Sender(data, channel, EncodingType.CRC_32, EncodingType.CRC_32, 0.75, 16)
-# receiver = Receiver(channel, EncodingType.CRC_32, EncodingType.CRC_32, 16)
+# sender = Sender(data, channel, EncodingType.ParityBit, EncodingType.ParityBit, 16)
+# receiver = Receiver(channel, EncodingType.ParityBit, EncodingType.ParityBit, 16)
+sender = Sender(data, channel, EncodingType.CRC_32, EncodingType.CRC_32, 16)
+receiver = Receiver(channel, EncodingType.CRC_32, EncodingType.CRC_32, 16)
 
 sender_thread = Thread(target=sender.threaded_sender_function)
 receiver_thread = Thread(target=receiver.threaded_receiver_function, args=(len(data), 4))

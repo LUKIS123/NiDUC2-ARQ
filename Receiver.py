@@ -48,6 +48,14 @@ class Receiver:
                 match self.ack_coding_type:
 
                     case EncodingTypeEnum.EncodingType.ParityBit:
+                        # Obsluga sytuacji jesli Sender jest do tylu
+                        if self.previous_ack == self.ack_success and frame_number_received < frame_index:
+                            ack_list = copy.deepcopy(self.ack_success)
+                            self.channel.transmit_data(
+                                Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.ParityBit))
+                            # Klasa przechowuje poprzedni stan ACK
+                            self.previous_ack = ack_list
+                            continue
                         # Obsluga sekwencjonowania ramek
                         if frame_number_received != frame_index:
                             ack_list = copy.deepcopy(self.ack_fail)
@@ -67,6 +75,14 @@ class Receiver:
                             ack_encoded = Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.ParityBit)
 
                     case EncodingTypeEnum.EncodingType.CRC_32:
+                        # Obsluga sytuacji jesli Sender jest do tylu
+                        if self.previous_ack == self.ack_success and frame_number_received < frame_index:
+                            ack_list = copy.deepcopy(self.ack_success)
+                            self.channel.transmit_data(
+                                Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.CRC_32))
+                            # Klasa przechowuje poprzedni stan ACK
+                            self.previous_ack = ack_list
+                            continue
                         # Obsluga sekwencjonowania ramek
                         if frame_number_received != frame_index:
                             ack_list = copy.deepcopy(self.ack_fail)

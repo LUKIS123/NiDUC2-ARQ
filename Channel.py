@@ -9,8 +9,8 @@ class Channel:
     # single frame is being stored in the channel
     q = deque(maxlen=1)
     condition_object = Condition()
-    probability_1 = 0.001
-    probability_2 = 0.01
+    probability_1 = 0.01
+    probability_2 = 0.1
     probability_3 = 10
     probability_4 = 10
 
