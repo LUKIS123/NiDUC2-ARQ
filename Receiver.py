@@ -102,6 +102,34 @@ class Receiver:
                             ack_list = copy.deepcopy(self.ack_fail)
                             ack_encoded = Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.CRC_32)
 
+                    case EncodingTypeEnum.EncodingType.CRC_8:
+                        # Obsluga sytuacji jesli Sender jest do tylu
+                        if self.previous_ack == self.ack_success and frame_number_received < frame_index:
+                            ack_list = copy.deepcopy(self.ack_success)
+                            self.channel.transmit_data(
+                                Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.CRC_8))
+                            # Klasa przechowuje poprzedni stan ACK
+                            self.previous_ack = ack_list
+                            continue
+                        # Obsluga sekwencjonowania ramek
+                        if frame_number_received != frame_index:
+                            ack_list = copy.deepcopy(self.ack_fail)
+                            self.channel.transmit_data(
+                                Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.CRC_8))
+                            # Klasa przechowuje poprzedni stan ACK
+                            self.previous_ack = ack_list
+                            continue
+
+                        received_data = Decoder.decode_crc8_encoded_frame_and_check_sum(encoded_frame)
+                        decoded_frame = received_data[0]
+                        if Decoder.check_for_error_crc8(decoded_frame, received_data[1]):
+                            ack_list = copy.deepcopy(self.ack_success)
+                            ack_encoded = Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.CRC_8)
+                            success = True
+                        else:
+                            ack_list = copy.deepcopy(self.ack_fail)
+                            ack_encoded = Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.CRC_8)
+
                     case _:
                         print("Invalid ack coding type")
 

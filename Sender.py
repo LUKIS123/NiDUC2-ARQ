@@ -85,6 +85,27 @@ class Sender:
                             self.ack_success = False
                             self.ack_match = False
 
+                    case EncodingTypeEnum.EncodingType.CRC_8:
+                        split_data = Decoder.decode_crc8_encoded_frame_and_check_sum(
+                            acknowledgement_encoded)
+                        self.acknowledgement_decoded = split_data[0]
+                        crc8_checksum = split_data[1]
+
+                        # checking if acknowledgement is stop message
+                        if index > 1:
+                            if self.check_for_stop_msg():
+                                self.stop = True
+                                break
+                        elif index == 1:
+                            self.regular_acknowledgement_length = len(self.acknowledgement_decoded)
+                        # checking done
+
+                        if Decoder.check_for_error_crc8(self.acknowledgement_decoded, crc8_checksum):
+                            self.ack_match = True
+                        else:
+                            self.ack_success = False
+                            self.ack_match = False
+
                     case _:
                         print("Invalid ack coding type")
 

@@ -18,8 +18,9 @@ single_sequence_length = 8000
 # =========== ARQ TEST ===========
 
 # TODO: jedna ramka 100 bajtow czyli 800bit + naglowek i stopka
-# do zrobienia naglowek ramki z numerowaniem
-# TODO: Zrobic aby wiadomosc ACK przesylala ktora rameczke chce z powrotem (aktualnie rozwiazanie powoduje zapetlanie sie jesli w jednym w odbiornikow przeskoczy indeks)
+#   do zrobienia naglowek ramki z numerowaniem
+# TODO: Zrobic aby wiadomosc ACK przesylala ktora rameczke chce z powrotem
+#   (aktualnie rozwiazanie powoduje zapetlanie sie jesli w jednym w odbiornikow przeskoczy indeks)
 #   obsluzyc przypadek gdy ilosc ramek przekroczy rozmiar naglowka
 
 data = DataGenerator.generate_bit_data(data_sequences, single_sequence_length)
@@ -34,8 +35,10 @@ channel = Channel(NoiseType.gilbert_elliot)
 
 # sender = Sender(data, channel, EncodingType.ParityBit, EncodingType.ParityBit, 16)
 # receiver = Receiver(channel, EncodingType.ParityBit, EncodingType.ParityBit, 16)
-sender = Sender(data, channel, EncodingType.CRC_32, EncodingType.CRC_32, 16)
-receiver = Receiver(channel, EncodingType.CRC_32, EncodingType.CRC_32, 16)
+# sender = Sender(data, channel, EncodingType.CRC_32, EncodingType.CRC_32, 16)
+# receiver = Receiver(channel, EncodingType.CRC_32, EncodingType.CRC_32, 16)
+sender = Sender(data, channel, EncodingType.CRC_8, EncodingType.CRC_8, 16)
+receiver = Receiver(channel, EncodingType.CRC_8, EncodingType.CRC_8, 16)
 
 sender_thread = Thread(target=sender.threaded_sender_function)
 receiver_thread = Thread(target=receiver.threaded_receiver_function, args=(len(data), 4))
