@@ -1,9 +1,9 @@
 import copy
 from CRC8Lib.crc import Calculator, Crc8
 
-
 # TODO: w 3 funkcjach tworzony jest obiekt typu Calculator potrzebny do obliczania crc8,
 #   możnaby to zrobić jako public w tej klasie, żeby była tylko 1 instancja?
+
 
 calculator = Calculator(Crc8.CCITT)
 
@@ -11,6 +11,7 @@ calculator = Calculator(Crc8.CCITT)
 def encode_list1d_crc_8(bit_data_list1d):
     output_list = copy.deepcopy(bit_data_list1d)
     byte_like_list = bytes(bit_data_list1d)
+    global calculator
     checksum = calculator.checksum(byte_like_list)
     bits_checksum = format(checksum, "08b")  # uzupelnienie zerami jak utnie
     checksum_as_list = [int(x) for x in str(bits_checksum)]
@@ -24,6 +25,7 @@ def encode_list2d_crc_8(bit_data_list2d):
     output_list = copy.deepcopy(bit_data_list2d)
     for i in range(len(output_list)):
         byte_like_list = bytes(output_list[i])
+        global calculator
         checksum = calculator.checksum(byte_like_list)
         bits_checksum = format(checksum, "08b")
         checksum_as_list = [int(x) for x in str(bits_checksum)]
@@ -43,6 +45,7 @@ def split_and_ret_crc8(bit_data_list_1d):
 
 def check_crc8_match(data_list, checksum_list):
     byte_like_list = bytes(data_list)
+    global calculator
     checksum = calculator.checksum(byte_like_list)
     bits_checksum = format(checksum, "08b")
     checksum_as_list = [int(x) for x in str(bits_checksum)]
