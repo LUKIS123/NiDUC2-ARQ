@@ -99,7 +99,7 @@ elif str(sys.argv[1]) == "run":
     out_hash = ByteUtils.calculate_md5_hash(ByteUtils.binary_to_byte_arr(ByteUtils.flatten_2d_list(out_frames)))
     print(src_hash)
     print(out_hash)
-    print("MD5 equal = " + src_hash == out_hash)
+    print("MD5 equal = " + str(src_hash == out_hash))
 
     # generating images
     img = Image.new('1', (data_sequences, frame_length))
