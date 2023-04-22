@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 .idea
 *.bmp
+data_file.txt

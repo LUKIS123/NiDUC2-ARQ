@@ -39,13 +39,6 @@ class Receiver:
                 frame_data = self.frame_sequence_util.split_sequence_from_frame(encoded_frame_received)
                 frame_number_received = self.frame_sequence_util.get_int_from_heading(frame_data[0])
 
-                if frame_number_received != frame_index:
-                    ack_list = copy.deepcopy(self.ack_fail)
-                    self.channel.transmit_data(Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.ParityBit))
-                    # saving ack of this iteration
-                    self.previous_ack = ack_list
-                    continue
-
                 encoded_frame = frame_data[1]
                 # Jesli numer ramki zgadza sie z licznikiem petli, przejdz dalej
                 decoded_frame = None
@@ -55,6 +48,23 @@ class Receiver:
                 match self.ack_coding_type:
 
                     case EncodingTypeEnum.EncodingType.ParityBit:
+                        # Obsluga sytuacji jesli Sender jest do tylu
+                        if self.previous_ack == self.ack_success and frame_number_received < frame_index:
+                            ack_list = copy.deepcopy(self.ack_success)
+                            self.channel.transmit_data(
+                                Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.ParityBit))
+                            # Klasa przechowuje poprzedni stan ACK
+                            self.previous_ack = ack_list
+                            continue
+                        # Obsluga sekwencjonowania ramek
+                        if frame_number_received != frame_index:
+                            ack_list = copy.deepcopy(self.ack_fail)
+                            self.channel.transmit_data(
+                                Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.ParityBit))
+                            # Klasa przechowuje poprzedni stan ACK
+                            self.previous_ack = ack_list
+                            continue
+
                         decoded_frame = Decoder.decode_parity_bit_encoded_frame(encoded_frame)
                         if Decoder.check_for_error_parity_bit(encoded_frame, decoded_frame):
                             ack_list = copy.deepcopy(self.ack_success)
@@ -64,43 +74,78 @@ class Receiver:
                             ack_list = copy.deepcopy(self.ack_fail)
                             ack_encoded = Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.ParityBit)
 
+                    case EncodingTypeEnum.EncodingType.CRC_32:
+                        # Obsluga sytuacji jesli Sender jest do tylu
+                        if self.previous_ack == self.ack_success and frame_number_received < frame_index:
+                            ack_list = copy.deepcopy(self.ack_success)
+                            self.channel.transmit_data(
+                                Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.CRC_32))
+                            # Klasa przechowuje poprzedni stan ACK
+                            self.previous_ack = ack_list
+                            continue
+                        # Obsluga sekwencjonowania ramek
+                        if frame_number_received != frame_index:
+                            ack_list = copy.deepcopy(self.ack_fail)
+                            self.channel.transmit_data(
+                                Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.CRC_32))
+                            # Klasa przechowuje poprzedni stan ACK
+                            self.previous_ack = ack_list
+                            continue
+
+                        received_data = Decoder.decode_crc32_encoded_frame_and_check_sum(encoded_frame)
+                        decoded_frame = received_data[0]
+                        if Decoder.check_for_error_crc32(decoded_frame, received_data[1]):
+                            ack_list = copy.deepcopy(self.ack_success)
+                            ack_encoded = Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.CRC_32)
+                            success = True
+                        else:
+                            ack_list = copy.deepcopy(self.ack_fail)
+                            ack_encoded = Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.CRC_32)
+
+                    case EncodingTypeEnum.EncodingType.CRC_8:
+                        # Obsluga sytuacji jesli Sender jest do tylu
+                        if self.previous_ack == self.ack_success and frame_number_received < frame_index:
+                            ack_list = copy.deepcopy(self.ack_success)
+                            self.channel.transmit_data(
+                                Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.CRC_8))
+                            # Klasa przechowuje poprzedni stan ACK
+                            self.previous_ack = ack_list
+                            continue
+                        # Obsluga sekwencjonowania ramek
+                        if frame_number_received != frame_index:
+                            ack_list = copy.deepcopy(self.ack_fail)
+                            self.channel.transmit_data(
+                                Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.CRC_8))
+                            # Klasa przechowuje poprzedni stan ACK
+                            self.previous_ack = ack_list
+                            continue
+
+                        received_data = Decoder.decode_crc8_encoded_frame_and_check_sum(encoded_frame)
+                        decoded_frame = received_data[0]
+                        if Decoder.check_for_error_crc8(decoded_frame, received_data[1]):
+                            ack_list = copy.deepcopy(self.ack_success)
+                            ack_encoded = Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.CRC_8)
+                            success = True
+                        else:
+                            ack_list = copy.deepcopy(self.ack_fail)
+                            ack_encoded = Encoder.encode_frame(ack_list, EncodingTypeEnum.EncodingType.CRC_8)
+
                     case _:
                         print("Invalid ack coding type")
+
                 if success:
+                    # Receiver przyjmuje ramke, zostaje zapisana
                     self.output_bit_data_list_2d.append(decoded_frame)
                     frame_index += 1
-                    # # appending decoded frame if success, checking for reoccurrence
-                    # if self.previous_ack == self.ack_success:
-                    #     if not self.check_if_recurrence(decoded_frame, frame_index):
-                    #         # success, frame is appended
-                    #         self.output_bit_data_list_2d.append(decoded_frame)
-                    #         frame_index += 1
-                    # else:
-                    #     # success, frame is appended
-                    #     self.output_bit_data_list_2d.append(decoded_frame)
-                    #     frame_index += 1
-                # transmitting back acknowledgment
+
+                # Transmisja ramki zgloszenia o powodzeniu/niepowodzeniu
                 self.channel.transmit_data(ack_encoded)
-                # saving ack of this iteration
+                # Klasa przechowuje poprzedni stan ACK
                 self.previous_ack = ack_list
 
         print("\nPrinting received data...")
         print(self.output_bit_data_list_2d)
-        # acknowledge the receiver to stop receiving
+        # Powiadomienie do Sender'a aby zakonczyl dzialanie
         self.channel.send_stop_msg(self.stop_msg)
-
-    # if the acknowledgment gets corrupted the receiver will send the identical frames
-    def check_if_recurrence(self, decoded_frame, index):
-        try:
-            previous_frame = self.output_bit_data_list_2d[index - 1]
-            if previous_frame == decoded_frame:
-                return True
-            else:
-                return False
-        except IndexError:
-            return False
-
-# TODO: dodac funckje ktora bedzie porownywala wiadomosc z poprzednia, jesli sa zgodne w 100% to pomin => done
-#       => mozliwe tez ze trzeba bedzie dodac numerowanie pakietow do kodera
 
 # TODO: do przemyslenia => frame count zastapic jakims framem oznaczajacym koniec transmisji
