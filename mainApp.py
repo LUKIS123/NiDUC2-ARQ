@@ -4,6 +4,7 @@ from threading import Thread
 import PIL.Image as Image
 
 import ByteUtils
+import DataGenerator
 from Channel import Channel
 from Enums.EncodingTypeEnum import EncodingType
 from Enums.NoiseTypeEnum import NoiseType
@@ -14,6 +15,30 @@ from Sender import Sender
 
 # ["run", how_many_frames, channel_noise, coding_type, error_probability_of_good_state,
 # error_probability_of_bad_state, switch_to_good_probability, switch_to_bad_probability]
+
+# ============================TEST===============================
+data_sequences = 16
+single_sequence_length = 16
+window_size = 4
+data = DataGenerator.generate_bit_data(data_sequences, single_sequence_length)
+print("Printing original data...")
+print(data)
+print("\n")
+channel = Channel(NoiseType.gilbert_elliot)
+sender = Sender(data, channel, EncodingType.ParityBit, EncodingType.ParityBit, 16)
+receiver = Receiver(channel, EncodingType.ParityBit, EncodingType.ParityBit, 16)
+
+sender_thread = Thread(target=sender.threaded_go_back_n_sender_function, args=(range(window_size), window_size))
+# receiver_thread = Thread(target=receiver.threaded_go_back_n_receiver_function, args=(len(data), 4))
+sender_thread.start()
+# receiver_thread.start()
+
+# shutting down threads
+# receiver_thread.join()
+sender_thread.join()
+print("Threads finished... Exiting...")
+sys.exit()
+# ============================TEST===============================
 
 print('Argument List:', str(sys.argv))
 
@@ -82,8 +107,8 @@ elif str(sys.argv[1]) == "run":
     sender = Sender(src_frames, channel, coding_type, coding_type, 16)
     receiver = Receiver(channel, coding_type, coding_type, 16)
 
-    sender_thread = Thread(target=sender.threaded_sender_function)
-    receiver_thread = Thread(target=receiver.threaded_receiver_function, args=(len(src_frames), 4))
+    sender_thread = Thread(target=sender.threaded_stop_and_wait_sender_function)
+    receiver_thread = Thread(target=receiver.threaded_stop_and_wait_receiver_function, args=(len(src_frames), 4))
     sender_thread.start()
     receiver_thread.start()
 
