@@ -25,18 +25,37 @@ print("Printing original data...")
 print(data)
 print("\n")
 channel = Channel(NoiseType.gilbert_elliot)
+channel.set_probabilities_gilbert_elliot(1, 2, 10, 10)
 sender = Sender(data, channel, EncodingType.ParityBit, EncodingType.ParityBit, 16)
 receiver = Receiver(channel, EncodingType.ParityBit, EncodingType.ParityBit, 16)
 
 sender_thread = Thread(target=sender.threaded_go_back_n_sender_function, args=(range(window_size), window_size))
-# receiver_thread = Thread(target=receiver.threaded_go_back_n_receiver_function, args=(len(data), 4))
+receiver_thread = Thread(target=receiver.threaded_go_back_n_receiver_function, args=(len(data), 4, 4))
 sender_thread.start()
-# receiver_thread.start()
+receiver_thread.start()
 
 # shutting down threads
-# receiver_thread.join()
+receiver_thread.join()
 sender_thread.join()
+
 print("Threads finished... Exiting...")
+out_frames = receiver.output_bit_data_list_2d
+
+# generating images
+img = Image.new('1', (data_sequences, single_sequence_length))
+pixels = img.load()
+for i in range(img.size[0]):
+    for j in range(img.size[1]):
+        pixels[i, j] = data[i][j]
+img.save('./pictures/original_image.bmp')
+
+img_after = Image.new('1', (data_sequences, single_sequence_length))
+pixels_after = img_after.load()
+for i in range(img_after.size[0]):
+    for j in range(img_after.size[1]):
+        pixels_after[i, j] = out_frames[i][j]
+img_after.save('./pictures/decoded_image.bmp')
+
 sys.exit()
 # ============================TEST===============================
 

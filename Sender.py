@@ -139,17 +139,24 @@ class Sender:
         lower_window_index = 0
         higher_window_index = window_size - 1
 
-        while not self.stop:
-            current_index = lower_window_index
+        # TODO do zrobienia -> Numerowanie zrobione chyba poprawnie, czasem
+        #   ACK MUSI BYC NAJPIERW NUMEROWANE A POZNIEJ KODOWANE
+        #   ACK MUSI ZAWIERAC NUMER RAMKI NA KTOREJ RECEIVER SIE AKTUALNIE ZNAJDUJE
+        #       Czasem symulacja sie zatrzymuje...
 
+        while not self.stop:
             print("-------------------------")
             for sequence in window_size_iterable:
-                # Numer ramki taki jak numer sekwencji pojedynczego okna
-                self.frame_sequence_util.set_frame_number(sequence)
-                current_index = current_index + sequence
+                current_index = lower_window_index + sequence
+
+                if current_index >= len(self.bit_data_list_2d):
+                    # Receiver has all the data...
+                    break
+
+                self.frame_sequence_util.set_frame_number(current_index)
                 encoded_frame = self.encoded_bit_list[current_index]
+                print(f"Frame: {current_index}")
                 self.channel.transmit_data(self.frame_sequence_util.append_sequence_number(encoded_frame))
-                print(f"Frame: {current_index + 1}")
             print("-------------------------")
 
             encoded_frame_received = self.channel.receive_data()
@@ -157,13 +164,18 @@ class Sender:
             acknowledgement_encoded = frame_data[1]
 
             self.acknowledgement_decoded = None
+
+            if not acknowledgement_encoded:
+                # Sender exiting...
+                break
+
             match self.ack_coding_type:
 
                 case EncodingTypeEnum.EncodingType.ParityBit:
                     self.acknowledgement_decoded = Decoder.decode_parity_bit_encoded_frame(acknowledgement_encoded)
 
                     # checking if acknowledgement is stop message
-                    if lower_window_index > 1:
+                    if lower_window_index > window_size:
                         if self.check_for_stop_msg():
                             self.stop = True
                             break
@@ -183,7 +195,7 @@ class Sender:
                     crc32_checksum = split_data[1]
 
                     # checking if acknowledgement is stop message
-                    if lower_window_index > 1:
+                    if lower_window_index > window_size:
                         if self.check_for_stop_msg():
                             self.stop = True
                             break
@@ -203,7 +215,7 @@ class Sender:
                     crc8_checksum = split_data[1]
 
                     # checking if acknowledgement is stop message
-                    if lower_window_index > 1:
+                    if lower_window_index > window_size:
                         if self.check_for_stop_msg():
                             self.stop = True
                             break
@@ -223,11 +235,11 @@ class Sender:
                 # Obsluga sekwencjonowania ramek
                 frame_number_received = self.frame_sequence_util.get_int_from_heading(frame_data[0])
                 if lower_window_index <= frame_number_received <= higher_window_index:
-                    advance = frame_number_received - lower_window_index
-                    lower_window_index += advance
+
+                    advance = frame_number_received
+                    lower_window_index = advance
+
                     if higher_window_index + advance >= len(self.bit_data_list_2d) - 1:
                         higher_window_index = len(self.bit_data_list_2d) - 1
                     else:
-                        higher_window_index += advance
-                    if higher_window_index == lower_window_index:
-                        break
+                        higher_window_index = lower_window_index + window_size
