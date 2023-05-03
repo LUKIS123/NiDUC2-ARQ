@@ -7,6 +7,32 @@ from Enums import EncodingTypeEnum
 from FrameSequencingUtils import FrameSequencing
 
 
+def check_for_stop_msg(ack_bit_len, encoded_ack_list_received, ack_coding_type):
+    one_count = 0
+    zero_count = 0
+    decoded_ack_list_received = []
+    match ack_coding_type:
+        case EncodingTypeEnum.EncodingType.ParityBit:
+            decoded_ack_list_received = Decoder.decode_parity_bit_encoded_frame(encoded_ack_list_received)
+        case EncodingTypeEnum.EncodingType.CRC_32:
+            decoded_ack_list_received = Decoder.decode_crc32_encoded_frame_and_check_sum(encoded_ack_list_received)
+        case EncodingTypeEnum.EncodingType.CRC_8:
+            decoded_ack_list_received = Decoder.decode_crc8_encoded_frame_and_check_sum(encoded_ack_list_received)
+
+    if len(decoded_ack_list_received) <= ack_bit_len:
+        return False
+    else:
+        for i in range(len(decoded_ack_list_received)):
+            if decoded_ack_list_received[i] == 1:
+                one_count += 1
+            else:
+                zero_count += 1
+        if abs(one_count - zero_count) <= 2:
+            return True
+        else:
+            return False
+
+
 class Receiver:
     output_bit_data_list_2d = []
     channel = None
@@ -158,17 +184,22 @@ class Receiver:
         frame_index = 0
         while frame_index < frame_count:
             tmp_encoded_frame_list = []
+
             for sequence in range(window_size):
                 tmp_index = frame_index + sequence
                 encoded_frame_received = self.channel.receive_data()
+                # Jesli ramka to StopMSG
+                if check_for_stop_msg(acknowledgement_bit_length, encoded_frame_received, self.ack_coding_type):
+                    print("kontyn")
+                    continue
                 # Obsluga sekwencjonowania ramek
                 frame_data = self.frame_sequence_util.split_sequence_from_frame(encoded_frame_received)
                 frame_number_received = self.frame_sequence_util.get_int_from_heading(frame_data[0])
+                if tmp_index == frame_count:
+                    continue
                 if frame_number_received == tmp_index:
                     encoded_frame = frame_data[1]
                     tmp_encoded_frame_list.append(encoded_frame)
-                if tmp_index == frame_count - 1:
-                    break
 
             ack_list = copy.deepcopy(self.ack_fail)
             ack_encoded = Encoder.encode_frame(ack_list, self.ack_coding_type)
@@ -220,18 +251,20 @@ class Receiver:
 
                     case _:
                         print("Invalid ack coding type")
+
                 if success:
                     self.output_bit_data_list_2d.append(decoded_frame)
                     advance += 1
                 else:
                     break
+
             frame_index += advance
             self.frame_sequence_util.set_frame_number(frame_index)
-            print(f"Sender request: {frame_index} ")
+            print(f"Receiver request: {frame_index} ")
 
             if len(self.output_bit_data_list_2d) == frame_count:
                 self.channel.send_stop_msg(self.stop_msg)
-                break
+                print("koniec - R")
             else:
                 # Receiver odpowiada - jaka ramke o danym indeksie aktualnie oczekuje
                 self.channel.transmit_data(self.frame_sequence_util.append_sequence_number(ack_encoded))
