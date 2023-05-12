@@ -14,7 +14,7 @@ class Sender:
     ack_coding_type = None
     ack_success = None
     ack_match = None
-    acknowledgement_decoded = None
+    acknowledgement_decoded = []
     regular_acknowledgement_length = None
     stop = False
 
@@ -43,7 +43,7 @@ class Sender:
                 self.channel.transmit_data(self.frame_sequence_util.append_sequence_number(encoded_frame))
 
                 acknowledgement_encoded = self.channel.receive_data()
-                self.acknowledgement_decoded = None
+                self.acknowledgement_decoded = []
 
                 match self.ack_coding_type:
 
@@ -145,7 +145,6 @@ class Sender:
         # TODO do zrobienia -> Numerowanie zrobione chyba poprawnie, czasem
         #   ACK MUSI BYC NAJPIERW NUMEROWANE A POZNIEJ KODOWANE
         #   ACK MUSI ZAWIERAC NUMER RAMKI NA KTOREJ RECEIVER SIE AKTUALNIE ZNAJDUJE
-        #       Czasem symulacja sie zatrzymuje...
 
         while not self.stop:
             print(lower_window_index)
@@ -169,7 +168,7 @@ class Sender:
             print("ACK EN:")
             print(acknowledgement_encoded)
 
-            self.acknowledgement_decoded = None
+            # self.acknowledgement_decoded = []
 
             # checking for stop_msg
             if self.check_for_stop_msg_stop_and_wait(encoded_frame_received, lower_window_index, window_size):
@@ -184,6 +183,9 @@ class Sender:
 
                     if lower_window_index <= window_size + 1:
                         self.regular_acknowledgement_length = len(self.acknowledgement_decoded)
+
+                    if len(acknowledgement_encoded) == 0:
+                        acknowledgement_encoded = Decoder.decode_parity_bit_encoded_frame(encoded_frame_received)
 
                     if Decoder.check_for_error_parity_bit(acknowledgement_encoded, self.acknowledgement_decoded):
                         self.ack_match = True

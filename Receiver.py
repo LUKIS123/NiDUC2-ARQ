@@ -185,21 +185,26 @@ class Receiver:
         while frame_index < frame_count:
             tmp_encoded_frame_list = []
 
+            window_fail = False
             for sequence in range(window_size):
                 tmp_index = frame_index + sequence
                 encoded_frame_received = self.channel.receive_data()
-                # Jesli ramka to StopMSG - jesli sender wyjdzie poza zakres ramek - uzupelnienie do 4
+                if window_fail:
+                    continue
+                # Jesli ramka to StopMSG - jesli sender wyjdzie poza zakres ramek - uzupelnienie do 4 ramek
                 if check_for_stop_msg(acknowledgement_bit_length, encoded_frame_received, self.ack_coding_type):
-                    print("kontyn")
                     continue
                 # Obsluga sekwencjonowania ramek
                 frame_data = self.frame_sequence_util.split_sequence_from_frame(encoded_frame_received)
                 frame_number_received = self.frame_sequence_util.get_int_from_heading(frame_data[0])
                 if tmp_index == frame_count:
                     continue
+
                 if frame_number_received == tmp_index:
                     encoded_frame = frame_data[1]
                     tmp_encoded_frame_list.append(encoded_frame)
+                else:
+                    window_fail = True
 
             ack_list = copy.deepcopy(self.ack_fail)
             ack_encoded = Encoder.encode_frame(ack_list, self.ack_coding_type)
