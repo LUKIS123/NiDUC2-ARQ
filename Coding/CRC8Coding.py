@@ -1,9 +1,5 @@
 import copy
-from CRC8Lib.crc import Calculator, Crc8
-
-# TODO: w 3 funkcjach tworzony jest obiekt typu Calculator potrzebny do obliczania crc8,
-#   możnaby to zrobić jako public w tej klasie, żeby była tylko 1 instancja?
-
+from _ExternalLibraries.CRC8Lib.crc import Calculator, Crc8
 
 calculator = Calculator(Crc8.CCITT)
 

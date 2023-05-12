@@ -16,6 +16,11 @@ class Sender:
     acknowledgement_decoded = None
     regular_acknowledgement_length = None
     stop = False
+    # zbieranie danych na temat symulacji
+    frames_sent = 0
+    ack_fail_count = 0
+    ack_success_count = 0
+    ack_error_count = 0
 
     def __init__(self, bit_list_2d, channel, frame_coding_type, ack_coding_type, heading_len):
         self.bit_data_list_2d = bit_list_2d
@@ -26,6 +31,13 @@ class Sender:
         self.frame_sequence_util = FrameSequencing(heading_len)
         # encoded 2D data list
         self.encoded_bit_list = Encoder.encode_frame(bit_list_2d, self.frame_coding_type)
+
+    def clear_data(self):
+        self.stop = False
+        self.frames_sent = 0
+        self.ack_fail_count = 0
+        self.ack_success_count = 0
+        self.ack_error_count = 0
 
     def threaded_sender_function(self):
         for index in range(len(self.bit_data_list_2d)):
@@ -42,6 +54,7 @@ class Sender:
                 self.channel.transmit_data(self.frame_sequence_util.append_sequence_number(encoded_frame))
 
                 acknowledgement_encoded = self.channel.receive_data()
+                self.frames_sent += 1
                 self.acknowledgement_decoded = None
 
                 match self.ack_coding_type:
@@ -116,8 +129,15 @@ class Sender:
                     for bit in range(len(self.acknowledgement_decoded)):
                         if self.acknowledgement_decoded[bit] == 1:
                             one_count += 1
+
                     if one_count < len(self.acknowledgement_decoded):
                         self.ack_success = False
+                        self.ack_fail_count += 1
+                    else:
+                        self.ack_success_count += 1
+
+                else:
+                    self.ack_error_count += 1
 
     def check_for_stop_msg(self):
         one_count = 0
