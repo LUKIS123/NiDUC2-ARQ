@@ -188,7 +188,7 @@ class Receiver:
             for sequence in range(window_size):
                 tmp_index = frame_index + sequence
                 encoded_frame_received = self.channel.receive_data()
-                # Jesli ramka to StopMSG
+                # Jesli ramka to StopMSG - jesli sender wyjdzie poza zakres ramek - uzupelnienie do 4
                 if check_for_stop_msg(acknowledgement_bit_length, encoded_frame_received, self.ack_coding_type):
                     print("kontyn")
                     continue
