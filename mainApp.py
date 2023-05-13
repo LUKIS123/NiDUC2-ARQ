@@ -4,6 +4,7 @@ from threading import Thread
 import PIL.Image as Image
 
 import ByteUtils
+import DataGenerator
 from Channel import Channel
 from Enums.EncodingTypeEnum import EncodingType
 from Enums.NoiseTypeEnum import NoiseType
@@ -19,6 +20,8 @@ from Sender import Sender
 # ->    ["test", how_many_frames, channel_noise, coding_type, error_probability_of_good_state,
 #       error_probability_of_bad_state, switch_to_good_probability, switch_to_bad_probability, ack_len, test_repeats]
 # ======================================
+
+# ============================TEST===============================
 
 print('Argument List:', str(sys.argv))
 testing = False
