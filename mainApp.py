@@ -155,13 +155,20 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
                 f"Undetected error count: {error_count}, Bit Error Rate = {(error_count / bit_count) * 100}% "
                 f"by {bit_count} data bits total")
             print("\nGeneral simulation data...")
-            print("SENDER:")
-            print(f"Total frames sent: {sender.frames_sent}")
-            print(f"Ack fail message count: {sender.ack_fail_count}")
-            print(f"Ack success message count: {sender.ack_success_count}")
-            print(f"Ack message corrupted: {sender.ack_error_count}")
-            print("RECEIVER:")
-            print(f"Corrupted frames detected: {receiver.frame_error_detected_count}")
+            if arq_protocol == "stop_and_wait" or arq_protocol == "saw":
+                print("SENDER:")
+                print(f"Total frames sent: {sender.frames_sent}")
+                print(f"Ack fail message count: {sender.ack_fail_count}")
+                print(f"Ack success message count: {sender.ack_success_count}")
+                print(f"Ack message corrupted: {sender.ack_error_count}")
+                print("RECEIVER:")
+                print(f"Corrupted frames detected: {receiver.frame_error_detected_count}")
+            else:
+                print(f"SENDER:\nTotal frames sent: {sender.frames_sent} == {int(sender.frames_sent / window_size)}"
+                      f" window sized sequences\nAck fail message count: {receiver.ack_fail_count}\n"
+                      f"Ack success message count: "
+                      f"{receiver.ack_success_count}\nAck message corrupted: {sender.ack_error_count}")
+                print(f"RECEIVER:\nCorrupted frames detected: {receiver.frame_error_detected_count}")
 
             # generating images
             img = Image.new('1', (data_sequences, frame_length))
@@ -205,7 +212,7 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
 
             sender.clear_data()
             receiver.clear_data()
-
+    print("\nEXITING SIMULATION...")
     sys.exit()
 
 # TODO: jedna ramka 100 bajtow czyli 800bit + naglowek i stopka
