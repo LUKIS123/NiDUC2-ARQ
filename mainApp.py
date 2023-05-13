@@ -12,6 +12,7 @@ from Sender import Sender
 
 # ========== simulation modes ==========
 # ->    ["generate", how_many_bytes]
+# Example: 16 frames per 100 bytes: >> generate 1600
 
 # ->    ["run", how_many_frames, channel_noise, coding_type, error_probability_of_good_state,
 #       error_probability_of_bad_state, switch_to_good_probability, switch_to_bad_probability, ack_len, arq_protocol]
@@ -20,8 +21,6 @@ from Sender import Sender
 #       error_probability_of_bad_state, switch_to_good_probability, switch_to_bad_probability, ack_len, arq_protocol,
 #       test_repeats]
 # ======================================
-
-# ============================TEST===============================
 
 print('Argument List:', str(sys.argv))
 testing = False

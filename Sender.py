@@ -187,7 +187,7 @@ class Sender:
             # print(acknowledgement_encoded)
 
             # checking for stop_msg
-            if self.check_for_stop_msg_stop_and_wait(encoded_frame_received, lower_window_index, window_size):
+            if self.check_for_stop_msg_go_back_n(encoded_frame_received, lower_window_index, window_size):
                 # Sender exiting...
                 break
             # checking done
@@ -245,7 +245,7 @@ class Sender:
             if self.ack_match:
                 # Obsluga sekwencjonowania ramek
                 frame_number_received = self.frame_sequence_util.get_int_from_heading(frame_data[0])
-                if lower_window_index <= frame_number_received <= higher_window_index:
+                if lower_window_index <= frame_number_received <= higher_window_index + 1:
 
                     advance = frame_number_received
                     if advance == len(self.bit_data_list_2d):
@@ -263,7 +263,7 @@ class Sender:
                 self.ack_error_count += 1
         print("STOP - Sender")
 
-    def check_for_stop_msg_stop_and_wait(self, frame_data, index, window_size):
+    def check_for_stop_msg_go_back_n(self, frame_data, index, window_size):
         one_count = 0
         zero_count = 0
         if index <= len(self.bit_data_list_2d) - (2 * window_size):
