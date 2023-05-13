@@ -165,10 +165,8 @@ class Sender:
             encoded_frame_received = self.channel.receive_data()
             frame_data = self.frame_sequence_util.split_sequence_from_frame(encoded_frame_received)
             acknowledgement_encoded = frame_data[1]
-            print("ACK EN:")
-            print(acknowledgement_encoded)
-
-            # self.acknowledgement_decoded = []
+            # print("ACK ENC:")
+            # print(acknowledgement_encoded)
 
             # checking for stop_msg
             if self.check_for_stop_msg_stop_and_wait(encoded_frame_received, lower_window_index, window_size):
@@ -185,8 +183,7 @@ class Sender:
                         self.regular_acknowledgement_length = len(self.acknowledgement_decoded)
 
                     if len(acknowledgement_encoded) == 0:
-                        acknowledgement_encoded = Decoder.decode_parity_bit_encoded_frame(encoded_frame_received)
-
+                        acknowledgement_encoded = encoded_frame_received
                     if Decoder.check_for_error_parity_bit(acknowledgement_encoded, self.acknowledgement_decoded):
                         self.ack_match = True
                     else:
@@ -227,9 +224,6 @@ class Sender:
                 # Sender exiting...
                 break
 
-            print(self.stop)
-            print("ACK DE:")
-            print(self.acknowledgement_decoded)
             if self.ack_match:
                 # Obsluga sekwencjonowania ramek
                 frame_number_received = self.frame_sequence_util.get_int_from_heading(frame_data[0])
@@ -243,11 +237,11 @@ class Sender:
 
                     if higher_window_index + advance >= len(self.bit_data_list_2d) - 1:
                         higher_window_index = len(self.bit_data_list_2d)
-                        print("11111")
+                        # print("Case 1")
                     else:
                         higher_window_index = lower_window_index + window_size
-                        print("222222")
-        print("STOP - S")
+                        # print("Case 2")
+        print("STOP - Sender")
 
     def check_for_stop_msg_stop_and_wait(self, frame_data, index, window_size):
         one_count = 0
@@ -273,7 +267,7 @@ class Sender:
                     one_count += 1
                 else:
                     zero_count += 1
-            if abs(one_count - zero_count) <= 2:
+            if abs(one_count - zero_count) <= 1:
                 return True
             else:
                 return False

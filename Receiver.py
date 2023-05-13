@@ -269,7 +269,7 @@ class Receiver:
 
             if len(self.output_bit_data_list_2d) == frame_count:
                 self.channel.send_stop_msg(self.stop_msg)
-                print("koniec - R")
+                print("STOP - Receiver\n")
             else:
                 # Receiver odpowiada - jaka ramke o danym indeksie aktualnie oczekuje
                 self.channel.transmit_data(self.frame_sequence_util.append_sequence_number(ack_encoded))
