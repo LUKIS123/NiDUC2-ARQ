@@ -4,7 +4,6 @@ from threading import Thread
 import PIL.Image as Image
 
 import ByteUtils
-import DataGenerator
 from Channel import Channel
 from Enums.EncodingTypeEnum import EncodingType
 from Enums.NoiseTypeEnum import NoiseType
@@ -15,10 +14,11 @@ from Sender import Sender
 # ->    ["generate", how_many_bytes]
 
 # ->    ["run", how_many_frames, channel_noise, coding_type, error_probability_of_good_state,
-#       error_probability_of_bad_state, switch_to_good_probability, switch_to_bad_probability, ack_len]
+#       error_probability_of_bad_state, switch_to_good_probability, switch_to_bad_probability, ack_len, arq_protocol]
 
 # ->    ["test", how_many_frames, channel_noise, coding_type, error_probability_of_good_state,
-#       error_probability_of_bad_state, switch_to_good_probability, switch_to_bad_probability, ack_len, test_repeats]
+#       error_probability_of_bad_state, switch_to_good_probability, switch_to_bad_probability, ack_len, arq_protocol,
+#       test_repeats]
 # ======================================
 
 # ============================TEST===============================
@@ -31,7 +31,7 @@ if str(sys.argv[1]) == "generate":
     byte_array = ByteUtils.generate_bytes(int(sys.argv[2]))
     ByteUtils.save_byte_file(byte_array, "resources/data_file.txt")
     sys.exit()
-elif str(sys.argv[1]) == "run" or "test":
+elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
     input_data = ByteUtils.get_binary_output_from_file("resources/data_file.txt")
     if len(input_data) % int(sys.argv[2]) != 0:
         print("Invalid frame number given")
@@ -44,7 +44,7 @@ elif str(sys.argv[1]) == "run" or "test":
             print("Invalid frame number given")
             sys.exit()
         try:
-            test_repeats = int(sys.argv[10])
+            test_repeats = int(sys.argv[11])
         except IndexError:
             test_repeats = 10
 
@@ -68,8 +68,8 @@ elif str(sys.argv[1]) == "run" or "test":
         print("Invalid noise type...")
         print("Proceeding with BSC channel...")
         ch_noise_type = NoiseType.bsc_channel
-    coding_type = str(sys.argv[4])
 
+    coding_type = str(sys.argv[4])
     match coding_type.lower():
         case "parity":
             coding_type = EncodingType.ParityBit
@@ -110,8 +110,18 @@ elif str(sys.argv[1]) == "run" or "test":
     receiver = Receiver(channel, coding_type, coding_type, 16)
 
     for iteration in range(test_repeats):
-        sender_thread = Thread(target=sender.threaded_sender_function)
-        receiver_thread = Thread(target=receiver.threaded_receiver_function, args=(len(src_frames), ack_len))
+        arq_protocol = str(sys.argv[10]).lower()
+        if arq_protocol == "stop_and_wait" or arq_protocol == "saw":
+            sender_thread = Thread(target=sender.threaded_stop_and_wait_sender_function)
+            receiver_thread = Thread(target=receiver.threaded_stop_and_wait_receiver_function,
+                                     args=(len(src_frames), ack_len))
+        else:
+            window_size = 4
+            sender_thread = Thread(target=sender.threaded_go_back_n_sender_function,
+                                   args=(range(window_size), window_size, ack_len))
+            receiver_thread = Thread(target=receiver.threaded_go_back_n_receiver_function,
+                                     args=(len(src_frames), ack_len, window_size))
+
         sender_thread.start()
         receiver_thread.start()
 
@@ -177,12 +187,19 @@ elif str(sys.argv[1]) == "run" or "test":
             file.write(f"TEST ITERATION: {iteration}\nMD5 comparison...\nMD5 equal = {md5_cmp}")
             file.write("\n\nBit error rate comparison...")
             file.write(
-                f"\nUndetected error count: {error_count}, Bit Error Rate = {(error_count / bit_count) * 100}% "
+                f"\nUndetected error count: {error_count} bits, Bit Error Rate = {(error_count / bit_count) * 100}% "
                 f"by {bit_count} data bits total")
             file.write("\n\nGeneral simulation data...")
-            file.write(f"\nSENDER:\nTotal frames sent: {sender.frames_sent}\nAck fail message count: "
-                       f"{sender.ack_fail_count}\nAck success message count: {sender.ack_success_count}\n"
-                       f"Ack message corrupted: {sender.ack_error_count}")
+            if arq_protocol == "stop_and_wait" or arq_protocol == "saw":
+                file.write(f"\nSENDER:\nTotal frames sent: {sender.frames_sent}\nAck fail message count: "
+                           f"{sender.ack_fail_count}\nAck success message count: {sender.ack_success_count}\n"
+                           f"Ack message corrupted: {sender.ack_error_count}")
+            else:
+                file.write(
+                    f"\nSENDER:\nTotal frames sent: {sender.frames_sent} == {int(sender.frames_sent / window_size)}"
+                    f" window sized sequences\nAck fail message count: {receiver.ack_fail_count}\n"
+                    f"Ack success message count: "
+                    f"{receiver.ack_success_count}\nAck message corrupted: {sender.ack_error_count}")
             file.write(f"\nRECEIVER:\nCorrupted frames detected: {receiver.frame_error_detected_count}")
             file.write("\n----------------------------------------------------------------------------\n\n")
             file.close()

@@ -40,7 +40,7 @@ class Sender:
         self.ack_success_count = 0
         self.ack_error_count = 0
 
-    def threaded_sender_function(self):
+    def threaded_stop_and_wait_sender_function(self):
         for index in range(len(self.bit_data_list_2d)):
             if self.stop:
                 break
@@ -163,10 +163,6 @@ class Sender:
         lower_window_index = 0
         higher_window_index = window_size - 1
 
-        # TODO do zrobienia -> Numerowanie zrobione chyba poprawnie, czasem
-        #   ACK MUSI BYC NAJPIERW NUMEROWANE A POZNIEJ KODOWANE
-        #   ACK MUSI ZAWIERAC NUMER RAMKI NA KTOREJ RECEIVER SIE AKTUALNIE ZNAJDUJE
-
         while not self.stop:
             print(lower_window_index)
             print("-------------------------")
@@ -181,6 +177,7 @@ class Sender:
                 encoded_frame = self.encoded_bit_list[current_index]
                 print(f"Frame: {current_index}")
                 self.channel.transmit_data(self.frame_sequence_util.append_sequence_number(encoded_frame))
+                self.frames_sent += 1
             print("-------------------------")
 
             encoded_frame_received = self.channel.receive_data()
@@ -262,6 +259,8 @@ class Sender:
                     else:
                         higher_window_index = lower_window_index + window_size
                         # print("Case 2")
+            else:
+                self.ack_error_count += 1
         print("STOP - Sender")
 
     def check_for_stop_msg_stop_and_wait(self, frame_data, index, window_size):

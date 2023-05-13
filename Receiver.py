@@ -8,32 +8,6 @@ from Enums import EncodingTypeEnum
 from FrameSequencingUtils import FrameSequencing
 
 
-def check_for_stop_msg(ack_bit_len, encoded_ack_list_received, ack_coding_type):
-    one_count = 0
-    zero_count = 0
-    decoded_ack_list_received = []
-    match ack_coding_type:
-        case EncodingTypeEnum.EncodingType.ParityBit:
-            decoded_ack_list_received = Decoder.decode_parity_bit_encoded_frame(encoded_ack_list_received)
-        case EncodingTypeEnum.EncodingType.CRC_32:
-            decoded_ack_list_received = Decoder.decode_crc32_encoded_frame_and_check_sum(encoded_ack_list_received)
-        case EncodingTypeEnum.EncodingType.CRC_8:
-            decoded_ack_list_received = Decoder.decode_crc8_encoded_frame_and_check_sum(encoded_ack_list_received)
-
-    if len(decoded_ack_list_received) <= ack_bit_len:
-        return False
-    else:
-        for i in range(len(decoded_ack_list_received)):
-            if decoded_ack_list_received[i] == 1:
-                one_count += 1
-            else:
-                zero_count += 1
-        if abs(one_count - zero_count) <= 2:
-            return True
-        else:
-            return False
-
-
 class Receiver:
     output_bit_data_list_2d = []
     channel = None
@@ -46,6 +20,9 @@ class Receiver:
     ack_fail = None
     # zbieranie danych na temat symulacji
     frame_error_detected_count = 0
+    go_back_n_numbering_error = 0
+    ack_fail_count = 0
+    ack_success_count = 0
 
     def __init__(self, channel, frame_coding_type, ack_coding_type, heading_len):
         self.channel = channel
@@ -53,13 +30,14 @@ class Receiver:
         self.ack_coding_type = ack_coding_type
         self.frame_sequence_util = FrameSequencing(heading_len)
 
-
     def clear_data(self):
         self.output_bit_data_list_2d = []
         self.previous_ack = None
         self.frame_error_detected_count = 0
+        self.ack_fail_count = 0
+        self.ack_success_count = 0
 
-    def threaded_receiver_function(self, frame_count, acknowledgement_bit_length):
+    def threaded_stop_and_wait_receiver_function(self, frame_count, acknowledgement_bit_length):
         self.stop_msg = Encoder.encode_frame(DataGenerator.generate_stop_msg(2 * acknowledgement_bit_length),
                                              self.ack_coding_type)
         self.ack_success = DataGenerator.generate_ack(acknowledgement_bit_length, True)
@@ -186,7 +164,6 @@ class Receiver:
         # Powiadomienie do Sender'a aby zakonczyl dzialanie
         self.channel.send_stop_msg(self.stop_msg)
 
-
     def threaded_go_back_n_receiver_function(self, frame_count, acknowledgement_bit_length, window_size):
         self.stop_msg = Encoder.encode_frame(DataGenerator.generate_stop_msg(2 * acknowledgement_bit_length),
                                              self.ack_coding_type)
@@ -201,6 +178,7 @@ class Receiver:
                 tmp_index = frame_index + sequence
                 encoded_frame_received = self.channel.receive_data()
                 if window_fail:
+                    self.go_back_n_numbering_error += 1
                     continue
                 # Jesli ramka to StopMSG - jesli sender wyjdzie poza zakres ramek - uzupelnienie do 4 ramek
                 if check_for_stop_msg(acknowledgement_bit_length, encoded_frame_received, self.ack_coding_type):
@@ -216,6 +194,7 @@ class Receiver:
                     tmp_encoded_frame_list.append(encoded_frame)
                 else:
                     window_fail = True
+                    self.go_back_n_numbering_error += 1
 
             ack_list = copy.deepcopy(self.ack_fail)
             ack_encoded = Encoder.encode_frame(ack_list, self.ack_coding_type)
@@ -238,6 +217,7 @@ class Receiver:
                             ack_list = copy.deepcopy(self.ack_fail)
                             ack_encoded = Encoder.encode_frame(ack_list, self.ack_coding_type)
                             success = False
+                            self.frame_error_detected_count += 1
 
                     case EncodingTypeEnum.EncodingType.CRC_32:
                         received_data = Decoder.decode_crc32_encoded_frame_and_check_sum(
@@ -251,6 +231,7 @@ class Receiver:
                             ack_list = copy.deepcopy(self.ack_fail)
                             ack_encoded = Encoder.encode_frame(ack_list, self.ack_coding_type)
                             success = False
+                            self.frame_error_detected_count += 1
 
                     case EncodingTypeEnum.EncodingType.CRC_8:
                         received_data = Decoder.decode_crc8_encoded_frame_and_check_sum(
@@ -264,6 +245,7 @@ class Receiver:
                             ack_list = copy.deepcopy(self.ack_fail)
                             ack_encoded = Encoder.encode_frame(ack_list, self.ack_coding_type)
                             success = False
+                            self.frame_error_detected_count += 1
 
                     case _:
                         print("Invalid ack coding type")
@@ -275,6 +257,7 @@ class Receiver:
                     break
 
             frame_index += advance
+
             self.frame_sequence_util.set_frame_number(frame_index)
             print(f"Receiver request: {frame_index} ")
 
@@ -285,5 +268,36 @@ class Receiver:
                 # Receiver odpowiada - jaka ramke o danym indeksie aktualnie oczekuje
                 self.channel.transmit_data(self.frame_sequence_util.append_sequence_number(ack_encoded))
 
-        print("\nPrinting received data...")
-        print(self.output_bit_data_list_2d)
+            # zbieranie informacji o przebiegu
+            if advance == window_size:
+                # jesli wszystkie ramki w oknie przeslane z sukcesem - success
+                self.ack_success_count += 1
+            else:
+                # jesli nie - fail
+                self.ack_fail_count += 1
+
+
+def check_for_stop_msg(ack_bit_len, encoded_ack_list_received, ack_coding_type):
+    one_count = 0
+    zero_count = 0
+    decoded_ack_list_received = []
+    match ack_coding_type:
+        case EncodingTypeEnum.EncodingType.ParityBit:
+            decoded_ack_list_received = Decoder.decode_parity_bit_encoded_frame(encoded_ack_list_received)
+        case EncodingTypeEnum.EncodingType.CRC_32:
+            decoded_ack_list_received = Decoder.decode_crc32_encoded_frame_and_check_sum(encoded_ack_list_received)
+        case EncodingTypeEnum.EncodingType.CRC_8:
+            decoded_ack_list_received = Decoder.decode_crc8_encoded_frame_and_check_sum(encoded_ack_list_received)
+
+    if len(decoded_ack_list_received) <= ack_bit_len:
+        return False
+    else:
+        for i in range(len(decoded_ack_list_received)):
+            if decoded_ack_list_received[i] == 1:
+                one_count += 1
+            else:
+                zero_count += 1
+        if abs(one_count - zero_count) <= 2:
+            return True
+        else:
+            return False
