@@ -1,4 +1,5 @@
 import copy
+from time import sleep
 
 import DataGenerator
 import Decoder
@@ -43,6 +44,8 @@ class Receiver:
     previous_ack = None
     ack_success = None
     ack_fail = None
+    # zbieranie danych na temat symulacji
+    frame_error_detected_count = 0
 
     def __init__(self, channel, frame_coding_type, ack_coding_type, heading_len):
         self.channel = channel
@@ -50,7 +53,13 @@ class Receiver:
         self.ack_coding_type = ack_coding_type
         self.frame_sequence_util = FrameSequencing(heading_len)
 
-    def threaded_stop_and_wait_receiver_function(self, frame_count, acknowledgement_bit_length):
+
+    def clear_data(self):
+        self.output_bit_data_list_2d = []
+        self.previous_ack = None
+        self.frame_error_detected_count = 0
+
+    def threaded_receiver_function(self, frame_count, acknowledgement_bit_length):
         self.stop_msg = Encoder.encode_frame(DataGenerator.generate_stop_msg(2 * acknowledgement_bit_length),
                                              self.ack_coding_type)
         self.ack_success = DataGenerator.generate_ack(acknowledgement_bit_length, True)
@@ -165,16 +174,18 @@ class Receiver:
                     # Receiver przyjmuje ramke, zostaje zapisana
                     self.output_bit_data_list_2d.append(decoded_frame)
                     frame_index += 1
+                else:
+                    self.frame_error_detected_count += 1
 
                 # Transmisja ramki zgloszenia o powodzeniu/niepowodzeniu
                 self.channel.transmit_data(ack_encoded)
                 # Klasa przechowuje poprzedni stan ACK
                 self.previous_ack = ack_list
 
-        print("\nPrinting received data...")
-        print(self.output_bit_data_list_2d)
+        sleep(0.1)
         # Powiadomienie do Sender'a aby zakonczyl dzialanie
         self.channel.send_stop_msg(self.stop_msg)
+
 
     def threaded_go_back_n_receiver_function(self, frame_count, acknowledgement_bit_length, window_size):
         self.stop_msg = Encoder.encode_frame(DataGenerator.generate_stop_msg(2 * acknowledgement_bit_length),

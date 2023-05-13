@@ -11,65 +11,42 @@ from Enums.NoiseTypeEnum import NoiseType
 from Receiver import Receiver
 from Sender import Sender
 
-# ["generate", how_many_bytes]
+# ========== simulation modes ==========
+# ->    ["generate", how_many_bytes]
 
-# ["run", how_many_frames, channel_noise, coding_type, error_probability_of_good_state,
-# error_probability_of_bad_state, switch_to_good_probability, switch_to_bad_probability]
+# ->    ["run", how_many_frames, channel_noise, coding_type, error_probability_of_good_state,
+#       error_probability_of_bad_state, switch_to_good_probability, switch_to_bad_probability, ack_len]
 
-# ============================TEST===============================
-data_sequences = 16
-single_sequence_length = 16
-window_size = 4
-data = DataGenerator.generate_bit_data(data_sequences, single_sequence_length)
-print("Printing original data...")
-print(data)
-print("\n")
-channel = Channel(NoiseType.gilbert_elliot)
-channel.set_probabilities_gilbert_elliot(1, 2, 10, 10)
-sender = Sender(data, channel, EncodingType.ParityBit, EncodingType.ParityBit, 16)
-receiver = Receiver(channel, EncodingType.ParityBit, EncodingType.ParityBit, 16)
+# ->    ["test", how_many_frames, channel_noise, coding_type, error_probability_of_good_state,
+#       error_probability_of_bad_state, switch_to_good_probability, switch_to_bad_probability, ack_len, test_repeats]
+# ======================================
 
-sender_thread = Thread(target=sender.threaded_go_back_n_sender_function, args=(range(window_size), window_size, 4))
-receiver_thread = Thread(target=receiver.threaded_go_back_n_receiver_function, args=(len(data), 4, 4))
-sender_thread.start()
-receiver_thread.start()
-
-# shutting down threads
-receiver_thread.join()
-sender_thread.join()
-
-print("Threads finished... Exiting...")
-out_frames = receiver.output_bit_data_list_2d
-
-# generating images
-img = Image.new('1', (data_sequences, single_sequence_length))
-pixels = img.load()
-for i in range(img.size[0]):
-    for j in range(img.size[1]):
-        pixels[i, j] = data[i][j]
-img.save('./pictures/original_image.bmp')
-
-img_after = Image.new('1', (data_sequences, single_sequence_length))
-pixels_after = img_after.load()
-for i in range(img_after.size[0]):
-    for j in range(img_after.size[1]):
-        pixels_after[i, j] = out_frames[i][j]
-img_after.save('./pictures/decoded_image.bmp')
-
-sys.exit()
 # ============================TEST===============================
 
 print('Argument List:', str(sys.argv))
+testing = False
+test_repeats = 1
 
 if str(sys.argv[1]) == "generate":
     byte_array = ByteUtils.generate_bytes(int(sys.argv[2]))
-    ByteUtils.save_byte_file(byte_array, "data_file.txt")
+    ByteUtils.save_byte_file(byte_array, "resources/data_file.txt")
     sys.exit()
-elif str(sys.argv[1]) == "run":
-    input_data = ByteUtils.get_binary_output_from_file("data_file.txt")
+elif str(sys.argv[1]) == "run" or "test":
+    input_data = ByteUtils.get_binary_output_from_file("resources/data_file.txt")
     if len(input_data) % int(sys.argv[2]) != 0:
         print("Invalid frame number given")
         sys.exit()
+
+    if str(sys.argv[1]) == "test":
+        testing = True
+        input_data = ByteUtils.get_binary_output_from_file("resources/data_file.txt")
+        if len(input_data) % int(sys.argv[2]) != 0:
+            print("Invalid frame number given")
+            sys.exit()
+        try:
+            test_repeats = int(sys.argv[10])
+        except IndexError:
+            test_repeats = 10
 
     data_sequences = int(sys.argv[2])
     frame_length = int(len(input_data) / data_sequences)
@@ -77,10 +54,11 @@ elif str(sys.argv[1]) == "run":
     src_frames = ByteUtils.separate_list_to_chunks(input_data, frame_length)
     print("Single frame length = ", str(len(src_frames[0])))
     src_hash = ByteUtils.calculate_md5_hash(ByteUtils.binary_to_byte_arr(ByteUtils.flatten_2d_list(src_frames)))
-    print("Printing original data...")
-    print(src_frames)
-    print("\n")
-    print("Starting simulation...")
+    if not testing:
+        print("Printing original data...")
+        print(src_frames)
+        print("\n")
+        print("Starting simulation...")
     ch_noise_type = str(sys.argv[3])
     if ch_noise_type == "gilbert-eliot":
         ch_noise_type = NoiseType.gilbert_elliot
@@ -121,50 +99,97 @@ elif str(sys.argv[1]) == "run":
     except IndexError:
         p4 = 10
 
+    try:
+        ack_len = int(sys.argv[9])
+    except IndexError:
+        ack_len = 4
+
     channel = Channel(ch_noise_type)
     channel.set_probabilities_gilbert_elliot(p1, p2, p3, p4)
     sender = Sender(src_frames, channel, coding_type, coding_type, 16)
     receiver = Receiver(channel, coding_type, coding_type, 16)
 
-    sender_thread = Thread(target=sender.threaded_stop_and_wait_sender_function)
-    receiver_thread = Thread(target=receiver.threaded_stop_and_wait_receiver_function, args=(len(src_frames), 4))
-    sender_thread.start()
-    receiver_thread.start()
+    for iteration in range(test_repeats):
+        sender_thread = Thread(target=sender.threaded_sender_function)
+        receiver_thread = Thread(target=receiver.threaded_receiver_function, args=(len(src_frames), ack_len))
+        sender_thread.start()
+        receiver_thread.start()
 
-    # shutting down threads
-    receiver_thread.join()
-    sender_thread.join()
-    print("Threads finished... Exiting...")
-    print("Printing output data...")
-    out_frames = receiver.output_bit_data_list_2d
+        # shutting down threads
+        receiver_thread.join()
+        sender_thread.join()
 
-    print(out_frames)
-    print("MD5 comparison...")
-    out_hash = ByteUtils.calculate_md5_hash(ByteUtils.binary_to_byte_arr(ByteUtils.flatten_2d_list(out_frames)))
-    print(src_hash)
-    print(out_hash)
-    print("MD5 equal = " + str(src_hash == out_hash))
+        out_frames = receiver.output_bit_data_list_2d
+        out_hash = ByteUtils.calculate_md5_hash(ByteUtils.binary_to_byte_arr(ByteUtils.flatten_2d_list(out_frames)))
+        md5_cmp = src_hash == out_hash
 
-    # generating images
-    img = Image.new('1', (data_sequences, frame_length))
-    pixels = img.load()
-    for i in range(img.size[0]):
-        for j in range(img.size[1]):
-            pixels[i, j] = src_frames[i][j]
-    img.save('./pictures/original_image.bmp')
+        # BIT ERROR RATE COUNT
+        bit_count = len(src_frames) * frame_length
+        error_count = 0
+        for i in range(len(src_frames)):
+            for j in range(len(src_frames[0])):
+                if src_frames[i][j] != out_frames[i][j]:
+                    error_count += 1
 
-    img_after = Image.new('1', (data_sequences, frame_length))
-    pixels_after = img_after.load()
-    for i in range(img_after.size[0]):
-        for j in range(img_after.size[1]):
-            pixels_after[i, j] = out_frames[i][j]
-    img_after.save('./pictures/decoded_image.bmp')
+        if not testing:
+            print("Threads finished... Exiting...")
+            print("Printing output data...")
+            print(out_frames)
+            print("\nMD5 comparison...")
+            print(src_hash)
+            print(out_hash)
+            print("MD5 equal = " + str(md5_cmp))
+
+            # printing simulation info
+            print("\nBit error rate comparison...")
+            print(
+                f"Undetected error count: {error_count}, Bit Error Rate = {(error_count / bit_count) * 100}% "
+                f"by {bit_count} data bits total")
+            print("\nGeneral simulation data...")
+            print("SENDER:")
+            print(f"Total frames sent: {sender.frames_sent}")
+            print(f"Ack fail message count: {sender.ack_fail_count}")
+            print(f"Ack success message count: {sender.ack_success_count}")
+            print(f"Ack message corrupted: {sender.ack_error_count}")
+            print("RECEIVER:")
+            print(f"Corrupted frames detected: {receiver.frame_error_detected_count}")
+
+            # generating images
+            img = Image.new('1', (data_sequences, frame_length))
+            pixels = img.load()
+            for i in range(img.size[0]):
+                for j in range(img.size[1]):
+                    pixels[i, j] = src_frames[i][j]
+            img.save('./pictures/original_image.bmp')
+
+            img_after = Image.new('1', (data_sequences, frame_length))
+            pixels_after = img_after.load()
+            for i in range(img_after.size[0]):
+                for j in range(img_after.size[1]):
+                    pixels_after[i, j] = out_frames[i][j]
+            img_after.save('./pictures/decoded_image.bmp')
+        else:
+            filename = "resources/test_results.txt"
+            file = open(filename, "a")
+            if iteration == 0:
+                file.write(f"Basic info: Single frame length={frame_length}, args=" + str(sys.argv))
+                file.write("\n----------------------------------------------------------------------------\n\n")
+            file.write(f"TEST ITERATION: {iteration}\nMD5 comparison...\nMD5 equal = {md5_cmp}")
+            file.write("\n\nBit error rate comparison...")
+            file.write(
+                f"\nUndetected error count: {error_count}, Bit Error Rate = {(error_count / bit_count) * 100}% "
+                f"by {bit_count} data bits total")
+            file.write("\n\nGeneral simulation data...")
+            file.write(f"\nSENDER:\nTotal frames sent: {sender.frames_sent}\nAck fail message count: "
+                       f"{sender.ack_fail_count}\nAck success message count: {sender.ack_success_count}\n"
+                       f"Ack message corrupted: {sender.ack_error_count}")
+            file.write(f"\nRECEIVER:\nCorrupted frames detected: {receiver.frame_error_detected_count}")
+            file.write("\n----------------------------------------------------------------------------\n\n")
+            file.close()
+
+            sender.clear_data()
+            receiver.clear_data()
 
     sys.exit()
 
-# =========== ARQ TEST ===========
 # TODO: jedna ramka 100 bajtow czyli 800bit + naglowek i stopka
-#   do zrobienia naglowek ramki z numerowaniem
-# TODO: Zrobic aby wiadomosc ACK przesylala ktora rameczke chce z powrotem
-#   (aktualnie rozwiazanie powoduje zapetlanie sie jesli w jednym w odbiornikow przeskoczy indeks)
-#   obsluzyc przypadek gdy ilosc ramek przekroczy rozmiar naglowka
