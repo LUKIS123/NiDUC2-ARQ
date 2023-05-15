@@ -44,7 +44,7 @@ class Receiver:
             success = False
             self.frame_sequence_util.set_frame_number(frame_index)
             while not success:
-                print(f"Receiver index: {frame_index}")
+                # print(f"Receiver index: {frame_index}")
                 encoded_frame_received = self.channel.receive_data()
                 # Obsluga sekwencjonowania ramek
                 frame_data = self.frame_sequence_util.split_sequence_from_frame(encoded_frame_received)
