@@ -63,9 +63,8 @@ class Receiver:
                         decoded_frame = Decoder.decode_parity_bit_encoded_frame(encoded_frame)
 
                         # Obsluga sytuacji jesli Sender jest do tylu
-                        if self.previous_ack == self.ack_success and \
-                                frame_number_received == self.frame_sequence_util.frame_number - 1:
-                            if decoded_frame == self.output_bit_data_list_2d[-1]:
+                        if frame_number_received == self.frame_sequence_util.frame_number - 1:
+                            if decoded_frame == self.output_bit_data_list_2d[frame_index - 1]:
                                 ack_list = copy.deepcopy(self.ack_success)
                                 self.channel.transmit_data(
                                     Encoder.encode_frame(ack_list, self.ack_coding_type))
@@ -94,9 +93,8 @@ class Receiver:
                         decoded_frame = received_data[0]
 
                         # Obsluga sytuacji jesli Sender jest do tylu
-                        if self.previous_ack == self.ack_success and \
-                                frame_number_received == self.frame_sequence_util.frame_number - 1:
-                            if decoded_frame == self.output_bit_data_list_2d[-1]:
+                        if frame_number_received == self.frame_sequence_util.frame_number - 1:
+                            if decoded_frame == self.output_bit_data_list_2d[frame_index - 1]:
                                 ack_list = copy.deepcopy(self.ack_success)
                                 self.channel.transmit_data(
                                     Encoder.encode_frame(ack_list, self.ack_coding_type))
@@ -125,9 +123,8 @@ class Receiver:
                         decoded_frame = received_data[0]
 
                         # Obsluga sytuacji jesli Sender jest do tylu
-                        if self.previous_ack == self.ack_success and \
-                                frame_number_received == self.frame_sequence_util.frame_number - 1:
-                            if decoded_frame == self.output_bit_data_list_2d[-1]:
+                        if frame_number_received == self.frame_sequence_util.frame_number - 1:
+                            if decoded_frame == self.output_bit_data_list_2d[frame_index - 1]:
                                 ack_list = copy.deepcopy(self.ack_success)
                                 self.channel.transmit_data(
                                     Encoder.encode_frame(ack_list, self.ack_coding_type))
