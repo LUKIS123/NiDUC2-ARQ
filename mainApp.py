@@ -101,7 +101,7 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
     try:
         ack_len = int(sys.argv[9])
     except IndexError:
-        ack_len = 4
+        ack_len = 8
 
     channel = Channel(ch_noise_type)
     channel.set_probabilities_gilbert_elliot(p1, p2, p3, p4)

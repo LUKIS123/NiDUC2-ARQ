@@ -48,7 +48,7 @@ class Sender:
             self.ack_success = False
 
             while not self.ack_success:
-                print(f"Frame: {index + 1}")
+                print(f"Frame: {index}")
                 encoded_frame = self.encoded_bit_list[index]
 
                 self.frame_sequence_util.set_frame_number(index)
