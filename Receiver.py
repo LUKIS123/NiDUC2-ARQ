@@ -60,15 +60,18 @@ class Receiver:
                 match self.frame_coding_type:
 
                     case EncodingTypeEnum.EncodingType.ParityBit:
+                        decoded_frame = Decoder.decode_parity_bit_encoded_frame(encoded_frame)
+
                         # Obsluga sytuacji jesli Sender jest do tylu
                         if self.previous_ack == self.ack_success and \
                                 frame_number_received == self.frame_sequence_util.frame_number - 1:
-                            ack_list = copy.deepcopy(self.ack_success)
-                            self.channel.transmit_data(
-                                Encoder.encode_frame(ack_list, self.ack_coding_type))
-                            # Klasa przechowuje poprzedni stan ACK
-                            self.previous_ack = ack_list
-                            continue
+                            if decoded_frame == self.output_bit_data_list_2d[-1]:
+                                ack_list = copy.deepcopy(self.ack_success)
+                                self.channel.transmit_data(
+                                    Encoder.encode_frame(ack_list, self.ack_coding_type))
+                                # Klasa przechowuje poprzedni stan ACK
+                                self.previous_ack = ack_list
+                                continue
                         # Obsluga sekwencjonowania ramek
                         elif frame_number_received != self.frame_sequence_util.frame_number:
                             ack_list = copy.deepcopy(self.ack_fail)
@@ -78,7 +81,6 @@ class Receiver:
                             self.previous_ack = ack_list
                             continue
 
-                        decoded_frame = Decoder.decode_parity_bit_encoded_frame(encoded_frame)
                         if Decoder.check_for_error_parity_bit(encoded_frame, decoded_frame):
                             ack_list = copy.deepcopy(self.ack_success)
                             ack_encoded = Encoder.encode_frame(ack_list, self.ack_coding_type)
@@ -88,15 +90,19 @@ class Receiver:
                             ack_encoded = Encoder.encode_frame(ack_list, self.ack_coding_type)
 
                     case EncodingTypeEnum.EncodingType.CRC_32:
+                        received_data = Decoder.decode_crc32_encoded_frame_and_check_sum(encoded_frame)
+                        decoded_frame = received_data[0]
+
                         # Obsluga sytuacji jesli Sender jest do tylu
                         if self.previous_ack == self.ack_success and \
                                 frame_number_received == self.frame_sequence_util.frame_number - 1:
-                            ack_list = copy.deepcopy(self.ack_success)
-                            self.channel.transmit_data(
-                                Encoder.encode_frame(ack_list, self.ack_coding_type))
-                            # Klasa przechowuje poprzedni stan ACK
-                            self.previous_ack = ack_list
-                            continue
+                            if decoded_frame == self.output_bit_data_list_2d[-1]:
+                                ack_list = copy.deepcopy(self.ack_success)
+                                self.channel.transmit_data(
+                                    Encoder.encode_frame(ack_list, self.ack_coding_type))
+                                # Klasa przechowuje poprzedni stan ACK
+                                self.previous_ack = ack_list
+                                continue
                         # Obsluga sekwencjonowania ramek
                         elif frame_number_received != self.frame_sequence_util.frame_number:
                             ack_list = copy.deepcopy(self.ack_fail)
@@ -106,8 +112,6 @@ class Receiver:
                             self.previous_ack = ack_list
                             continue
 
-                        received_data = Decoder.decode_crc32_encoded_frame_and_check_sum(encoded_frame)
-                        decoded_frame = received_data[0]
                         if Decoder.check_for_error_crc32(decoded_frame, received_data[1]):
                             ack_list = copy.deepcopy(self.ack_success)
                             ack_encoded = Encoder.encode_frame(ack_list, self.ack_coding_type)
@@ -117,15 +121,19 @@ class Receiver:
                             ack_encoded = Encoder.encode_frame(ack_list, self.ack_coding_type)
 
                     case EncodingTypeEnum.EncodingType.CRC_8:
+                        received_data = Decoder.decode_crc8_encoded_frame_and_check_sum(encoded_frame)
+                        decoded_frame = received_data[0]
+
                         # Obsluga sytuacji jesli Sender jest do tylu
                         if self.previous_ack == self.ack_success and \
                                 frame_number_received == self.frame_sequence_util.frame_number - 1:
-                            ack_list = copy.deepcopy(self.ack_success)
-                            self.channel.transmit_data(
-                                Encoder.encode_frame(ack_list, self.ack_coding_type))
-                            # Klasa przechowuje poprzedni stan ACK
-                            self.previous_ack = ack_list
-                            continue
+                            if decoded_frame == self.output_bit_data_list_2d[-1]:
+                                ack_list = copy.deepcopy(self.ack_success)
+                                self.channel.transmit_data(
+                                    Encoder.encode_frame(ack_list, self.ack_coding_type))
+                                # Klasa przechowuje poprzedni stan ACK
+                                self.previous_ack = ack_list
+                                continue
                         # Obsluga sekwencjonowania ramek
                         elif frame_number_received != self.frame_sequence_util.frame_number:
                             ack_list = copy.deepcopy(self.ack_fail)
@@ -135,8 +143,6 @@ class Receiver:
                             self.previous_ack = ack_list
                             continue
 
-                        received_data = Decoder.decode_crc8_encoded_frame_and_check_sum(encoded_frame)
-                        decoded_frame = received_data[0]
                         if Decoder.check_for_error_crc8(decoded_frame, received_data[1]):
                             ack_list = copy.deepcopy(self.ack_success)
                             ack_encoded = Encoder.encode_frame(ack_list, self.ack_coding_type)
