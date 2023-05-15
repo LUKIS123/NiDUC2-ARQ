@@ -14,7 +14,6 @@ class Receiver:
     frame_coding_type = None
     ack_coding_type = None
     stop_msg = None
-    previous_ack = None
     ack_success = None
     ack_fail = None
     # zbieranie danych na temat symulacji
@@ -31,7 +30,6 @@ class Receiver:
 
     def clear_data(self):
         self.output_bit_data_list_2d = []
-        self.previous_ack = None
         self.frame_error_detected_count = 0
         self.ack_fail_count = 0
         self.ack_success_count = 0
@@ -54,7 +52,6 @@ class Receiver:
 
                 encoded_frame = frame_data[1]
                 decoded_frame = None
-                ack_list = None
                 ack_encoded = None
 
                 match self.frame_coding_type:
@@ -68,16 +65,12 @@ class Receiver:
                                 ack_list = copy.deepcopy(self.ack_success)
                                 self.channel.transmit_data(
                                     Encoder.encode_frame(ack_list, self.ack_coding_type))
-                                # Klasa przechowuje poprzedni stan ACK
-                                self.previous_ack = ack_list
                                 continue
                         # Obsluga sekwencjonowania ramek
                         elif frame_number_received != self.frame_sequence_util.frame_number:
                             ack_list = copy.deepcopy(self.ack_fail)
                             self.channel.transmit_data(
                                 Encoder.encode_frame(ack_list, self.ack_coding_type))
-                            # Klasa przechowuje poprzedni stan ACK
-                            self.previous_ack = ack_list
                             continue
 
                         if Decoder.check_for_error_parity_bit(encoded_frame, decoded_frame):
@@ -98,16 +91,12 @@ class Receiver:
                                 ack_list = copy.deepcopy(self.ack_success)
                                 self.channel.transmit_data(
                                     Encoder.encode_frame(ack_list, self.ack_coding_type))
-                                # Klasa przechowuje poprzedni stan ACK
-                                self.previous_ack = ack_list
                                 continue
                         # Obsluga sekwencjonowania ramek
                         elif frame_number_received != self.frame_sequence_util.frame_number:
                             ack_list = copy.deepcopy(self.ack_fail)
                             self.channel.transmit_data(
                                 Encoder.encode_frame(ack_list, self.ack_coding_type))
-                            # Klasa przechowuje poprzedni stan ACK
-                            self.previous_ack = ack_list
                             continue
 
                         if Decoder.check_for_error_crc32(decoded_frame, received_data[1]):
@@ -128,16 +117,12 @@ class Receiver:
                                 ack_list = copy.deepcopy(self.ack_success)
                                 self.channel.transmit_data(
                                     Encoder.encode_frame(ack_list, self.ack_coding_type))
-                                # Klasa przechowuje poprzedni stan ACK
-                                self.previous_ack = ack_list
                                 continue
                         # Obsluga sekwencjonowania ramek
                         elif frame_number_received != self.frame_sequence_util.frame_number:
                             ack_list = copy.deepcopy(self.ack_fail)
                             self.channel.transmit_data(
                                 Encoder.encode_frame(ack_list, self.ack_coding_type))
-                            # Klasa przechowuje poprzedni stan ACK
-                            self.previous_ack = ack_list
                             continue
 
                         if Decoder.check_for_error_crc8(decoded_frame, received_data[1]):
@@ -164,9 +149,6 @@ class Receiver:
                 else:
                     # Transmisja ramki zgloszenia o powodzeniu/niepowodzeniu
                     self.channel.transmit_data(ack_encoded)
-
-                # Klasa przechowuje poprzedni stan ACK
-                self.previous_ack = ack_list
 
     def threaded_go_back_n_receiver_function(self, frame_count, acknowledgement_bit_length, window_size):
         self.stop_msg = Encoder.encode_frame(DataGenerator.generate_stop_msg(2 * acknowledgement_bit_length),
