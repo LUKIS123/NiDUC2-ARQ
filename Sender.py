@@ -244,15 +244,11 @@ class Sender:
             if self.ack_match:
                 # Obsluga sekwencjonowania ramek
                 frame_number_received = self.frame_sequence_util.get_int_from_heading(frame_data[0])
-                if lower_window_index - 1 <= frame_number_received <= higher_window_index + 1:
+                if lower_window_index - window_size <= frame_number_received <= higher_window_index + 1:
 
-                    advance = frame_number_received
-                    if advance == len(self.bit_data_list_2d):
-                        self.stop = True
+                    lower_window_index = frame_number_received
 
-                    lower_window_index = advance
-
-                    if higher_window_index + advance >= len(self.bit_data_list_2d) - 1:
+                    if lower_window_index >= len(self.bit_data_list_2d) - 1:
                         higher_window_index = len(self.bit_data_list_2d)
                         # print("Case 1")
                     else:
