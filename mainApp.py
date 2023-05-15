@@ -1,6 +1,6 @@
 import sys
 from threading import Thread
-
+import csv
 import PIL.Image as Image
 
 import ByteUtils
@@ -24,7 +24,7 @@ from Sender import Sender
 
 print('Argument List:', str(sys.argv))
 testing = False
-test_repeats = 1
+simulation_repeats = 1
 
 if str(sys.argv[1]) == "generate":
     byte_array = ByteUtils.generate_bytes(int(sys.argv[2]))
@@ -43,9 +43,9 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
             print("Invalid frame number given")
             sys.exit()
         try:
-            test_repeats = int(sys.argv[11])
+            simulation_repeats = int(sys.argv[11])
         except IndexError:
-            test_repeats = 10
+            simulation_repeats = 10
 
     data_sequences = int(sys.argv[2])
     frame_length = int(len(input_data) / data_sequences)
@@ -108,8 +108,12 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
     sender = Sender(src_frames, channel, coding_type, coding_type, 16)
     receiver = Receiver(channel, coding_type, coding_type, 16)
 
-    for iteration in range(test_repeats):
-        arq_protocol = str(sys.argv[10]).lower()
+    for iteration in range(simulation_repeats):
+        arq_protocol = None
+        try:
+            arq_protocol = str(sys.argv[10]).lower()
+        except IndexError:
+            arq_protocol = "saw"
         if arq_protocol == "stop_and_wait" or arq_protocol == "saw":
             sender_thread = Thread(target=sender.threaded_stop_and_wait_sender_function)
             receiver_thread = Thread(target=receiver.threaded_stop_and_wait_receiver_function,
@@ -185,31 +189,26 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
                     pixels_after[i, j] = out_frames[i][j]
             img_after.save('./pictures/decoded_image.bmp')
         else:
-            filename = "resources/test_results.txt"
-            file = open(filename, "a")
-            if iteration == 0:
-                file.write(f"Basic info: Single frame length={frame_length}, args=" + str(sys.argv))
-                file.write("\n----------------------------------------------------------------------------\n\n")
-            file.write(f"TEST ITERATION: {iteration}\nMD5 comparison...\nMD5 equal = {md5_cmp}")
-            file.write("\n\nBit error rate comparison...")
-            file.write(
-                f"\nUndetected error count: {error_count} bits, Bit Error Rate = {(error_count / bit_count) * 100}% "
-                f"by {bit_count} data bits total")
-            file.write("\n\nGeneral simulation data...")
-            if arq_protocol == "stop_and_wait" or arq_protocol == "saw":
-                file.write(f"\nSENDER:\nTotal frames sent: {sender.frames_sent}\nAck fail message count: "
-                           f"{sender.ack_fail_count}\nAck success message count: {sender.ack_success_count}\n"
-                           f"Ack message corrupted: {sender.ack_error_count}")
-            else:
-                file.write(
-                    f"\nSENDER:\nTotal frames sent: {sender.frames_sent} == {int(sender.frames_sent / window_size)}"
-                    f" window sized sequences\nAck fail message count: {receiver.ack_fail_count}\n"
-                    f"Ack success message count: "
-                    f"{receiver.ack_success_count}\nAck message corrupted: {sender.ack_error_count}")
-            file.write(f"\nRECEIVER:\nCorrupted frames detected: {receiver.frame_error_detected_count}")
-            file.write("\n----------------------------------------------------------------------------\n\n")
-            file.close()
-
+            filename = "resources/test_results.csv"
+            with open(filename, 'a', newline='') as csvfile:
+                csvwriter = csv.writer(csvfile)
+                if iteration == 0:
+                    csvwriter.writerow(
+                        ["Basic info: Single frame length=" + str(frame_length) + ", args=" + str(sys.argv)])
+                    csvwriter.writerow(
+                        ['Iteration', 'MD5 equal', 'Undetected error count (bits)', 'Bit Error Rate in %',
+                         'Data bits total', 'Total frames sent', 'Ack fail message count',
+                         'Ack success message count', 'Ack message corrupted', 'Corrupted frames detected'])
+                if arq_protocol == "stop_and_wait" or arq_protocol == "saw":
+                    csvwriter.writerow([str(iteration), str(md5_cmp), str(error_count),
+                                        str((error_count / bit_count) * 100), str(bit_count), str(sender.frames_sent),
+                                        str(sender.ack_fail_count), str(sender.ack_success_count),
+                                        str(sender.ack_error_count), str(receiver.frame_error_detected_count)])
+                else:
+                    csvwriter.writerow([str(iteration), str(md5_cmp), str(error_count),
+                                        str((error_count / bit_count) * 100), str(bit_count), str(sender.frames_sent),
+                                        str(receiver.ack_fail_count), str(receiver.ack_success_count),
+                                        str(sender.ack_error_count), str(receiver.frame_error_detected_count)])
             sender.clear_data()
             receiver.clear_data()
     print("\nEXITING SIMULATION...")

@@ -1,0 +1,12 @@
+"Basic info: Single frame length=128, args=['C:\\Users\\lukas\\_fork\\NiDUC2-ARQ\\mainApp.py', 'test', '100', 'gilbert-eliot', 'crc8']"
+Iteration,MD5 equal,Undetected error count (bits),Bit Error Rate in %,Data bits total,Total frames sent,Ack fail message count,Ack success message count,Ack message corrupted,Corrupted frames detected
+0,True,0,0.0,12800,104,3,100,1,3
+1,True,0,0.0,12800,102,2,100,0,2
+2,True,0,0.0,12800,103,3,100,0,3
+3,True,0,0.0,12800,103,3,100,0,3
+4,True,0,0.0,12800,100,0,100,0,0
+5,True,0,0.0,12800,102,2,100,0,2
+6,True,0,0.0,12800,102,1,100,1,1
+7,True,0,0.0,12800,105,4,100,1,4
+8,True,0,0.0,12800,102,2,100,0,2
+9,True,0,0.0,12800,101,1,100,0,0
