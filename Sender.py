@@ -40,21 +40,29 @@ class Sender:
         self.ack_success_count = 0
         self.ack_error_count = 0
 
-    def threaded_stop_and_wait_sender_function(self):
+    def threaded_stop_and_wait_sender_function(self, iterable, frame_repeats_allowed):
+        frame_number_received = 0
         for index in range(len(self.bit_data_list_2d)):
             if self.stop:
                 break
 
             self.ack_success = False
 
+            if frame_number_received == index or frame_number_received == index - 1 or frame_number_received == index - 1:
+                index = frame_number_received
+
             while not self.ack_success:
-                print(f"Frame: {index}")
+                print(f" Frame: {index}")
                 encoded_frame = self.encoded_bit_list[index]
 
                 self.frame_sequence_util.set_frame_number(index)
                 self.channel.transmit_data(self.frame_sequence_util.append_sequence_number(encoded_frame))
 
-                acknowledgement_encoded = self.channel.receive_data()
+                frame_data = self.frame_sequence_util.split_sequence_from_frame(self.channel.receive_data())
+                frame_number_received = self.frame_sequence_util.get_int_from_heading(frame_data[0])
+                print(f"SEND-NR={frame_number_received}")
+
+                acknowledgement_encoded = frame_data[1]
 
                 self.acknowledgement_decoded = []
                 self.frames_sent += 1
@@ -124,6 +132,7 @@ class Sender:
                     case _:
                         print("Invalid ack coding type")
 
+                print(self.acknowledgement_decoded)
                 if self.ack_match:
                     # encoding matches
                     self.ack_success = True
@@ -133,13 +142,20 @@ class Sender:
                             one_count += 1
 
                     if one_count < len(self.acknowledgement_decoded):
+                        print("Lipa")
                         self.ack_success = False
                         self.ack_fail_count += 1
+                        if frame_number_received == index - 1:
+                            print("Cofam")
+                            index = frame_number_received
                     else:
+                        print("GIT")
+                        self.ack_success = True
                         self.ack_success_count += 1
-
                 else:
+                    print("wyjebalo")
                     self.ack_error_count += 1
+        print("STOP - Sender")
 
     def check_for_stop_msg(self):
         one_count = 0

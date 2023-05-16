@@ -115,7 +115,7 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
         except IndexError:
             arq_protocol = "saw"
         if arq_protocol == "stop_and_wait" or arq_protocol == "saw":
-            sender_thread = Thread(target=sender.threaded_stop_and_wait_sender_function)
+            sender_thread = Thread(target=sender.threaded_stop_and_wait_sender_function, args=(range(20), 50))
             receiver_thread = Thread(target=receiver.threaded_stop_and_wait_receiver_function,
                                      args=(len(src_frames), ack_len))
         else:
