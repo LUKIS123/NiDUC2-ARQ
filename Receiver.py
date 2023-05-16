@@ -162,11 +162,21 @@ class Receiver:
         self.ack_success = DataGenerator.generate_ack(acknowledgement_bit_length, True)
         self.ack_fail = DataGenerator.generate_ack(acknowledgement_bit_length, False)
         frame_index = 0
+        sleep(0.01)
+
         while frame_index < frame_count:
+            # Sygnal do przerwania symulacji
+            if self.stop_receiving:
+                break
+
             tmp_encoded_frame_list = []
 
             window_fail = False
             for sequence in range(window_size):
+                # Sygnal do przerwania symulacji
+                if self.stop_receiving:
+                    break
+
                 tmp_index = frame_index + sequence
                 encoded_frame_received = self.channel.receive_data()
                 if window_fail:
@@ -249,6 +259,10 @@ class Receiver:
                     advance += 1
                 else:
                     break
+
+            # Sygnal do przerwania symulacji
+            if self.stop_receiving:
+                break
 
             frame_index += advance
 

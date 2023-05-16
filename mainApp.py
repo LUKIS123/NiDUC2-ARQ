@@ -28,7 +28,7 @@ simulation_repeats = 1
 
 # dla bitu parzystosci moze byc mniejszy limit
 # dla crc32 conajmniej 1000 przy duzym zaszumieniu
-frame_repeat_limit = 100
+frame_repeat_limit = 1000
 
 if str(sys.argv[1]) == "generate":
     byte_array = ByteUtils.generate_bytes(int(sys.argv[2]))
@@ -141,6 +141,20 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
         md5_cmp = src_hash == out_hash
 
         if sender.simulation_failure:
+            if testing and iteration == 0:
+                avg_single_frame_repeats = sum(sender.frame_repeats_counter) / data_sequences
+                filename = "resources/test_results.csv"
+                with open(filename, 'a', newline='') as csvfile:
+                    csvwriter = csv.writer(csvfile)
+                    if iteration == 0:
+                        csvwriter.writerow(
+                            ["Basic info: Single frame length=" + str(frame_length) + ", args=" + str(sys.argv)])
+                        csvwriter.writerow(
+                            ['Iteration', 'MD5 equal', 'Undetected error count (bits)', 'Bit Error Rate in %',
+                             'Data bits total', 'Total frames sent', 'Ack fail message count',
+                             'Ack success message count', 'Ack message corrupted', 'Corrupted frames detected',
+                             'Average single frame repeats'])
+
             sender.clear_data()
             receiver.clear_data()
             continue

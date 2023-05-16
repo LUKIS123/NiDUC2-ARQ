@@ -213,16 +213,25 @@ class Sender:
                 self.frames_sent += 1
                 # Zbieranie danych o tym ile razy ta sama ramka zostala wyslana
                 self.frame_repeats_counter[current_index] += 1
+
+                # Limit powtorzen zostal przekroczony - przerywanie symulacji
+                if self.frame_repeats_counter[current_index] == self.frame_repeat_limit:
+                    self.simulation_failure = True
+                    self.receiver.stop_receiving = True
+                    self.stop = True
+                    self.channel.send_stop_msg(stop_msg)
+                    break
             print("-------------------------")
+
+            if self.stop:
+                break
 
             encoded_frame_received = self.channel.receive_data()
             frame_data = self.frame_sequence_util.split_sequence_from_frame(encoded_frame_received)
             acknowledgement_encoded = frame_data[1]
-            # print("ACK ENC:")
-            # print(acknowledgement_encoded)
 
             # checking for stop_msg
-            if self.check_for_stop_msg_go_back_n(encoded_frame_received, lower_window_index, window_size):
+            if self.check_for_stop_msg_go_back_n(encoded_frame_received, lower_window_index):
                 # Sender exiting...
                 break
             # checking done
@@ -286,15 +295,13 @@ class Sender:
 
                     if lower_window_index >= len(self.bit_data_list_2d) - 1:
                         higher_window_index = len(self.bit_data_list_2d)
-                        # print("Case 1")
                     else:
                         higher_window_index = lower_window_index + window_size
-                        # print("Case 2")
             else:
                 self.ack_error_count += 1
         print("STOP - Sender")
 
-    def check_for_stop_msg_go_back_n(self, frame_data, index, window_size):
+    def check_for_stop_msg_go_back_n(self, frame_data, index):
         one_count = 0
         zero_count = 0
         if index <= len(self.bit_data_list_2d) - 1:
