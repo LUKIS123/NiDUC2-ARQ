@@ -1,6 +1,6 @@
+import DataGenerator
 import Decoder
 import Encoder
-import DataGenerator
 from Enums import EncodingTypeEnum
 from FrameSequencingUtils import FrameSequencing
 
@@ -9,6 +9,7 @@ class Sender:
     bit_data_list_2d = None
     encoded_bit_list = None
     channel = None
+    receiver = None
     frame_sequence_util = None
     frame_coding_type = None
     ack_coding_type = None
@@ -17,13 +18,17 @@ class Sender:
     acknowledgement_decoded = []
     regular_acknowledgement_length = None
     stop = False
+    stop_msg = None
+    frame_repeat_limit = 100
+    simulation_failure = False
     # zbieranie danych na temat symulacji
     frames_sent = 0
     ack_fail_count = 0
     ack_success_count = 0
     ack_error_count = 0
+    frame_repeats_counter = None
 
-    def __init__(self, bit_list_2d, channel, frame_coding_type, ack_coding_type, heading_len):
+    def __init__(self, bit_list_2d, channel, frame_coding_type, ack_coding_type, receiver, frame_limit, heading_len):
         self.bit_data_list_2d = bit_list_2d
         self.channel = channel
         self.frame_coding_type = frame_coding_type
@@ -32,6 +37,9 @@ class Sender:
         self.frame_sequence_util = FrameSequencing(heading_len)
         # encoded 2D data list
         self.encoded_bit_list = Encoder.encode_frame(bit_list_2d, self.frame_coding_type)
+        self.frame_repeats_counter = [0] * len(self.bit_data_list_2d)
+        self.receiver = receiver
+        self.frame_repeat_limit = frame_limit
 
     def clear_data(self):
         self.stop = False
@@ -39,17 +47,18 @@ class Sender:
         self.ack_fail_count = 0
         self.ack_success_count = 0
         self.ack_error_count = 0
+        self.frame_repeats_counter = [0] * len(self.bit_data_list_2d)
+        self.simulation_failure = False
 
-    def threaded_stop_and_wait_sender_function(self, iterable, frame_repeats_allowed):
-        frame_number_received = 0
-        for index in range(len(self.bit_data_list_2d)):
+    def threaded_stop_and_wait_sender_function(self, acknowledgement_bit_length, ack_sequencing_delimiter):
+        self.stop_msg = Encoder.encode_frame(DataGenerator.generate_stop_msg(2 * acknowledgement_bit_length),
+                                             self.ack_coding_type)
+        index = 0
+        while index != len(self.bit_data_list_2d):
             if self.stop:
                 break
 
             self.ack_success = False
-
-            if frame_number_received == index or frame_number_received == index - 1 or frame_number_received == index - 1:
-                index = frame_number_received
 
             while not self.ack_success:
                 print(f" Frame: {index}")
@@ -58,9 +67,19 @@ class Sender:
                 self.frame_sequence_util.set_frame_number(index)
                 self.channel.transmit_data(self.frame_sequence_util.append_sequence_number(encoded_frame))
 
+                # Zbieranie danych o tym ile razy ta sama ramka zostala wyslana
+                self.frame_repeats_counter[index] += 1
+
+                # Limit powtorzen zostal przekroczony - przerywanie symulacji
+                if self.frame_repeats_counter[index] == self.frame_repeat_limit:
+                    self.simulation_failure = True
+                    self.receiver.stop_receiving = True
+                    self.stop = True
+                    self.channel.send_stop_msg(self.stop_msg)
+                    break
+
                 frame_data = self.frame_sequence_util.split_sequence_from_frame(self.channel.receive_data())
                 frame_number_received = self.frame_sequence_util.get_int_from_heading(frame_data[0])
-                print(f"SEND-NR={frame_number_received}")
 
                 acknowledgement_encoded = frame_data[1]
 
@@ -77,7 +96,7 @@ class Sender:
                             if self.check_for_stop_msg():
                                 self.stop = True
                                 break
-                        elif index == 1:
+                        else:
                             self.regular_acknowledgement_length = len(self.acknowledgement_decoded)
                         # checking done
 
@@ -98,7 +117,7 @@ class Sender:
                             if self.check_for_stop_msg():
                                 self.stop = True
                                 break
-                        elif index == 1:
+                        else:
                             self.regular_acknowledgement_length = len(self.acknowledgement_decoded)
                         # checking done
 
@@ -119,7 +138,7 @@ class Sender:
                             if self.check_for_stop_msg():
                                 self.stop = True
                                 break
-                        elif index == 1:
+                        else:
                             self.regular_acknowledgement_length = len(self.acknowledgement_decoded)
                         # checking done
 
@@ -132,7 +151,6 @@ class Sender:
                     case _:
                         print("Invalid ack coding type")
 
-                print(self.acknowledgement_decoded)
                 if self.ack_match:
                     # encoding matches
                     self.ack_success = True
@@ -142,19 +160,19 @@ class Sender:
                             one_count += 1
 
                     if one_count < len(self.acknowledgement_decoded):
-                        print("Lipa")
                         self.ack_success = False
                         self.ack_fail_count += 1
-                        if frame_number_received == index - 1:
-                            print("Cofam")
-                            index = frame_number_received
                     else:
-                        print("GIT")
                         self.ack_success = True
                         self.ack_success_count += 1
+                        self.ack_success = False
                 else:
-                    print("wyjebalo")
                     self.ack_error_count += 1
+
+                if frame_number_received == index or frame_number_received == index + ack_sequencing_delimiter \
+                        or frame_number_received == index - ack_sequencing_delimiter:
+                    index = frame_number_received
+
         print("STOP - Sender")
 
     def check_for_stop_msg(self):
@@ -193,6 +211,8 @@ class Sender:
                 print(f"Frame: {current_index}")
                 self.channel.transmit_data(self.frame_sequence_util.append_sequence_number(encoded_frame))
                 self.frames_sent += 1
+                # Zbieranie danych o tym ile razy ta sama ramka zostala wyslana
+                self.frame_repeats_counter[current_index] += 1
             print("-------------------------")
 
             encoded_frame_received = self.channel.receive_data()
