@@ -91,14 +91,12 @@ class Sender:
                     case EncodingTypeEnum.EncodingType.ParityBit:
                         self.acknowledgement_decoded = Decoder.decode_parity_bit_encoded_frame(acknowledgement_encoded)
 
-                        # checking if acknowledgement is stop message
                         if index > 1:
                             if self.check_for_stop_msg():
                                 self.stop = True
                                 break
                         else:
                             self.regular_acknowledgement_length = len(self.acknowledgement_decoded)
-                        # checking done
 
                         if Decoder.check_for_error_parity_bit(acknowledgement_encoded, self.acknowledgement_decoded):
                             self.ack_match = True
@@ -112,14 +110,12 @@ class Sender:
                         self.acknowledgement_decoded = split_data[0]
                         crc32_checksum = split_data[1]
 
-                        # checking if acknowledgement is stop message
                         if index > 1:
                             if self.check_for_stop_msg():
                                 self.stop = True
                                 break
                         else:
                             self.regular_acknowledgement_length = len(self.acknowledgement_decoded)
-                        # checking done
 
                         if Decoder.check_for_error_crc32(self.acknowledgement_decoded, crc32_checksum):
                             self.ack_match = True
@@ -133,14 +129,12 @@ class Sender:
                         self.acknowledgement_decoded = split_data[0]
                         crc8_checksum = split_data[1]
 
-                        # checking if acknowledgement is stop message
                         if index > 1:
                             if self.check_for_stop_msg():
                                 self.stop = True
                                 break
                         else:
                             self.regular_acknowledgement_length = len(self.acknowledgement_decoded)
-                        # checking done
 
                         if Decoder.check_for_error_crc8(self.acknowledgement_decoded, crc8_checksum):
                             self.ack_match = True
@@ -152,7 +146,6 @@ class Sender:
                         print("Invalid ack coding type")
 
                 if self.ack_match:
-                    # encoding matches
                     self.ack_success = True
                     one_count = 0
                     for bit in range(len(self.acknowledgement_decoded)):
@@ -164,15 +157,25 @@ class Sender:
                         self.ack_fail_count += 1
                     else:
                         self.ack_success = True
+                        index += 1
                         self.ack_success_count += 1
-                        self.ack_success = False
                 else:
                     self.ack_error_count += 1
 
-                if frame_number_received == index or frame_number_received == index + ack_sequencing_delimiter \
-                        or frame_number_received == index - ack_sequencing_delimiter:
-                    index = frame_number_received
-
+                if not self.ack_success:
+                    if frame_number_received == index or frame_number_received == index + ack_sequencing_delimiter \
+                            or frame_number_received == index - ack_sequencing_delimiter:
+                        if frame_number_received == index + ack_sequencing_delimiter:
+                            self.ack_success = True
+                            if self.ack_match:
+                                self.ack_fail_count -= 1
+                            else:
+                                self.ack_error_count -= 1
+                            self.ack_success_count += 1
+                        elif frame_number_received == index - ack_sequencing_delimiter:
+                            self.ack_success_count -= 1
+                            self.ack_fail_count += 1
+                        index = frame_number_received
         print("STOP - Sender")
 
     def check_for_stop_msg(self):
@@ -230,11 +233,9 @@ class Sender:
             frame_data = self.frame_sequence_util.split_sequence_from_frame(encoded_frame_received)
             acknowledgement_encoded = frame_data[1]
 
-            # checking for stop_msg
             if self.check_for_stop_msg_go_back_n(encoded_frame_received, lower_window_index):
                 # Sender exiting...
                 break
-            # checking done
 
             match self.ack_coding_type:
 
