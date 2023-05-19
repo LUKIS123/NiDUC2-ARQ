@@ -26,6 +26,10 @@ print('Argument List:', str(sys.argv))
 testing = False
 simulation_repeats = 1
 
+# dla bitu parzystosci moze byc mniejszy limit
+# dla crc32 conajmniej 1000 przy duzym zaszumieniu
+frame_repeat_limit = 1000
+
 if str(sys.argv[1]) == "generate":
     byte_array = ByteUtils.generate_bytes(int(sys.argv[2]))
     ByteUtils.save_byte_file(byte_array, "resources/data_file.txt")
@@ -105,8 +109,8 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
 
     channel = Channel(ch_noise_type)
     channel.set_probabilities_gilbert_elliot(p1, p2, p3, p4)
-    sender = Sender(src_frames, channel, coding_type, coding_type, 16)
     receiver = Receiver(channel, coding_type, coding_type, 16)
+    sender = Sender(src_frames, channel, coding_type, coding_type, receiver, frame_repeat_limit, 16)
 
     for iteration in range(simulation_repeats):
         arq_protocol = None
@@ -115,7 +119,7 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
         except IndexError:
             arq_protocol = "saw"
         if arq_protocol == "stop_and_wait" or arq_protocol == "saw":
-            sender_thread = Thread(target=sender.threaded_stop_and_wait_sender_function)
+            sender_thread = Thread(target=sender.threaded_stop_and_wait_sender_function, args=(ack_len, 1))
             receiver_thread = Thread(target=receiver.threaded_stop_and_wait_receiver_function,
                                      args=(len(src_frames), ack_len))
         else:
@@ -135,6 +139,25 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
         out_frames = receiver.output_bit_data_list_2d
         out_hash = ByteUtils.calculate_md5_hash(ByteUtils.binary_to_byte_arr(ByteUtils.flatten_2d_list(out_frames)))
         md5_cmp = src_hash == out_hash
+
+        if sender.simulation_failure:
+            if testing and iteration == 0:
+                avg_single_frame_repeats = sum(sender.frame_repeats_counter) / data_sequences
+                filename = "resources/test_results.csv"
+                with open(filename, 'a', newline='') as csvfile:
+                    csvwriter = csv.writer(csvfile)
+                    if iteration == 0:
+                        csvwriter.writerow(
+                            ["Basic info: Single frame length=" + str(frame_length) + ", args=" + str(sys.argv)])
+                        csvwriter.writerow(
+                            ['Iteration', 'MD5 equal', 'Undetected error count (bits)', 'Bit Error Rate in %',
+                             'Data bits total', 'Total frames sent', 'Ack fail message count',
+                             'Ack success message count', 'Ack message corrupted', 'Corrupted frames detected',
+                             'Average single frame repeats'])
+
+            sender.clear_data()
+            receiver.clear_data()
+            continue
 
         # BIT ERROR RATE COUNT
         bit_count = len(src_frames) * frame_length
@@ -189,6 +212,7 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
                     pixels_after[i, j] = out_frames[i][j]
             img_after.save('./pictures/decoded_image.bmp')
         else:
+            avg_single_frame_repeats = sum(sender.frame_repeats_counter) / data_sequences
             filename = "resources/test_results.csv"
             with open(filename, 'a', newline='') as csvfile:
                 csvwriter = csv.writer(csvfile)
@@ -198,17 +222,24 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
                     csvwriter.writerow(
                         ['Iteration', 'MD5 equal', 'Undetected error count (bits)', 'Bit Error Rate in %',
                          'Data bits total', 'Total frames sent', 'Ack fail message count',
-                         'Ack success message count', 'Ack message corrupted', 'Corrupted frames detected'])
+                         'Ack success message count', 'Ack message corrupted', 'Corrupted frames detected',
+                         'Average single frame repeats'])
                 if arq_protocol == "stop_and_wait" or arq_protocol == "saw":
                     csvwriter.writerow([str(iteration), str(md5_cmp), str(error_count),
                                         str((error_count / bit_count) * 100), str(bit_count), str(sender.frames_sent),
                                         str(sender.ack_fail_count), str(sender.ack_success_count),
-                                        str(sender.ack_error_count), str(receiver.frame_error_detected_count)])
+                                        str(sender.ack_error_count), str(receiver.frame_error_detected_count),
+                                        avg_single_frame_repeats  # , sender.frame_repeats_counter
+                                        ]
+                                       )
                 else:
                     csvwriter.writerow([str(iteration), str(md5_cmp), str(error_count),
                                         str((error_count / bit_count) * 100), str(bit_count), str(sender.frames_sent),
                                         str(receiver.ack_fail_count), str(receiver.ack_success_count),
-                                        str(sender.ack_error_count), str(receiver.frame_error_detected_count)])
+                                        str(sender.ack_error_count), str(receiver.frame_error_detected_count),
+                                        avg_single_frame_repeats  # , sender.frame_repeats_counter
+                                        ]
+                                       )
             sender.clear_data()
             receiver.clear_data()
     print("\nEXITING SIMULATION...")

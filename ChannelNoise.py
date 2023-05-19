@@ -55,7 +55,7 @@ def gilbert_elliot_channel(bit_data_list, error_probability_of_good_state, error
                         gilbert_elliot_processed_list[i][j] = 0
                     else:
                         gilbert_elliot_processed_list[i][j] = 1
-                if random.uniform(0, 1) <= switch_to_good_probability:
+                if random.uniform(0, 1) <= (switch_to_good_probability / 100):
                     current_state = True
 
     return gilbert_elliot_processed_list
@@ -87,7 +87,7 @@ def gilbert_elliot_channel_single(bit_list1d, error_probability_of_good_state, e
                     output_list.append(1)
             else:
                 output_list.append(bit_list1d[i])
-            if random.uniform(0, 1) <= switch_to_good_probability:
+            if random.uniform(0, 1) <= (switch_to_good_probability / 100):
                 current_state = True
 
     return output_list
