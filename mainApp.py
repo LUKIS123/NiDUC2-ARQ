@@ -264,7 +264,9 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
             sender.clear_data()
             receiver.clear_data()
             with open("resources/test_catch_error.txt", 'a') as catch_error_file:
-                catch_error_file.write("\n============================================================\n")
+                catch_error_file.write(
+                    f"\n==================== TEST ITERATION = {iteration}, "
+                    f"NEXT: {iteration + 1} ====================\n\n")
 
     print("\nEXITING SIMULATION...")
     sys.exit()
