@@ -26,8 +26,7 @@ print('Argument List:', str(sys.argv))
 testing = False
 simulation_repeats = 1
 
-# dla bitu parzystosci moze byc mniejszy limit
-# dla crc32 conajmniej 1000 przy duzym zaszumieniu
+# maximum frame repeats allowed
 frame_repeat_limit = 1000
 
 if str(sys.argv[1]) == "generate":
@@ -111,6 +110,15 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
     channel.set_probabilities_gilbert_elliot(p1, p2, p3, p4)
     receiver = Receiver(channel, coding_type, coding_type, 16)
     sender = Sender(src_frames, channel, coding_type, coding_type, receiver, frame_repeat_limit, 16)
+    receiver.set_src_frames_to_compare(src_frames)
+
+    if testing:
+        with open("resources/test_catch_error.txt", 'a') as catch_error_file:
+            catch_error_file.write("SRC DATA:\n")
+            for index in range(len(src_frames)):
+                catch_error_file.write(''.join(map(str, src_frames[index])))
+                catch_error_file.write("\n")
+            catch_error_file.write("\n")
 
     for iteration in range(simulation_repeats):
         arq_protocol = None
@@ -142,7 +150,7 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
 
         if sender.simulation_failure:
             if testing and iteration == 0:
-                avg_single_frame_repeats = sum(sender.frame_repeats_counter) / data_sequences
+                avg_single_frame_repeats = sum(sender.frame_repeats_counter_list) / data_sequences
                 filename = "resources/test_results.csv"
                 with open(filename, 'a', newline='') as csvfile:
                     csvwriter = csv.writer(csvfile)
@@ -154,6 +162,11 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
                              'Data bits total', 'Total frames sent', 'Ack fail message count',
                              'Ack success message count', 'Ack message corrupted', 'Corrupted frames detected',
                              'Average single frame repeats'])
+                with open("resources/test_count_frames.csv", 'a', newline='') as count_test_file:
+                    csvwriter2 = csv.writer(count_test_file)
+                    if iteration == 0:
+                        csvwriter2.writerow(
+                            ["Basic info: Single frame length=" + str(frame_length) + ", args=" + str(sys.argv)])
 
             sender.clear_data()
             receiver.clear_data()
@@ -212,7 +225,7 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
                     pixels_after[i, j] = out_frames[i][j]
             img_after.save('./pictures/decoded_image.bmp')
         else:
-            avg_single_frame_repeats = sum(sender.frame_repeats_counter) / data_sequences
+            avg_single_frame_repeats = sum(sender.frame_repeats_counter_list) / data_sequences
             filename = "resources/test_results.csv"
             with open(filename, 'a', newline='') as csvfile:
                 csvwriter = csv.writer(csvfile)
@@ -240,8 +253,19 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
                                         avg_single_frame_repeats  # , sender.frame_repeats_counter
                                         ]
                                        )
+            with open("resources/test_count_frames.csv", 'a', newline='') as count_test_file:
+                csvwriter2 = csv.writer(count_test_file)
+                if iteration == 0:
+                    csvwriter2.writerow(
+                        ["Basic info: Single frame length=" + str(frame_length) + ", args=" + str(sys.argv)])
+                csvwriter2.writerow(["Test iteration=" + str(iteration)])
+                csvwriter2.writerow(map(lambda x: x, sender.frame_repeats_counter_list))
+
             sender.clear_data()
             receiver.clear_data()
+            with open("resources/test_catch_error.txt", 'a') as catch_error_file:
+                catch_error_file.write("\n============================================================\n")
+
     print("\nEXITING SIMULATION...")
     sys.exit()
 

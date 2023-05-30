@@ -26,7 +26,7 @@ class Sender:
     ack_fail_count = 0
     ack_success_count = 0
     ack_error_count = 0
-    frame_repeats_counter = None
+    frame_repeats_counter_list = None
 
     def __init__(self, bit_list_2d, channel, frame_coding_type, ack_coding_type, receiver, frame_limit, heading_len):
         self.bit_data_list_2d = bit_list_2d
@@ -37,7 +37,7 @@ class Sender:
         self.frame_sequence_util = FrameSequencing(heading_len)
         # encoded 2D data list
         self.encoded_bit_list = Encoder.encode_frame(bit_list_2d, self.frame_coding_type)
-        self.frame_repeats_counter = [0] * len(self.bit_data_list_2d)
+        self.frame_repeats_counter_list = [0] * len(self.bit_data_list_2d)
         self.receiver = receiver
         self.frame_repeat_limit = frame_limit
 
@@ -47,7 +47,7 @@ class Sender:
         self.ack_fail_count = 0
         self.ack_success_count = 0
         self.ack_error_count = 0
-        self.frame_repeats_counter = [0] * len(self.bit_data_list_2d)
+        self.frame_repeats_counter_list = [0] * len(self.bit_data_list_2d)
         self.simulation_failure = False
 
     def threaded_stop_and_wait_sender_function(self, acknowledgement_bit_length, ack_sequencing_delimiter):
@@ -68,10 +68,10 @@ class Sender:
                 self.channel.transmit_data(self.frame_sequence_util.append_sequence_number(encoded_frame))
 
                 # Zbieranie danych o tym ile razy ta sama ramka zostala wyslana
-                self.frame_repeats_counter[index] += 1
+                self.frame_repeats_counter_list[index] += 1
 
                 # Limit powtorzen zostal przekroczony - przerywanie symulacji
-                if self.frame_repeats_counter[index] == self.frame_repeat_limit:
+                if self.frame_repeats_counter_list[index] == self.frame_repeat_limit:
                     self.simulation_failure = True
                     self.receiver.stop_receiving = True
                     self.stop = True
@@ -215,10 +215,10 @@ class Sender:
                 self.channel.transmit_data(self.frame_sequence_util.append_sequence_number(encoded_frame))
                 self.frames_sent += 1
                 # Zbieranie danych o tym ile razy ta sama ramka zostala wyslana
-                self.frame_repeats_counter[current_index] += 1
+                self.frame_repeats_counter_list[current_index] += 1
 
                 # Limit powtorzen zostal przekroczony - przerywanie symulacji
-                if self.frame_repeats_counter[current_index] == self.frame_repeat_limit:
+                if self.frame_repeats_counter_list[current_index] == self.frame_repeat_limit:
                     self.simulation_failure = True
                     self.receiver.stop_receiving = True
                     self.stop = True

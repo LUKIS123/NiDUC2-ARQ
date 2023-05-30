@@ -18,6 +18,7 @@ class Receiver:
     ack_success = None
     ack_fail = None
     stop_receiving = False
+    src_frames = None
     # zbieranie danych na temat symulacji
     frame_error_detected_count = 0
     go_back_n_numbering_error = 0
@@ -29,6 +30,20 @@ class Receiver:
         self.frame_coding_type = frame_coding_type
         self.ack_coding_type = ack_coding_type
         self.frame_sequence_util = FrameSequencing(heading_len)
+
+    def set_src_frames_to_compare(self, src_frames):
+        self.src_frames = src_frames
+
+    def compare_frame(self, decoded_frame, index):
+        if decoded_frame != self.src_frames[index]:
+            with open("resources/test_catch_error.txt", 'a') as catch_error_file:
+                catch_error_file.write(f"Output frame corrupted at index: {index}\nReceived:\n")
+                list_string = ''.join(map(str, decoded_frame))
+                catch_error_file.write(list_string)
+                catch_error_file.write("\nOriginal:\n")
+                list_string = ''.join(map(str, self.src_frames[index]))
+                catch_error_file.write(list_string)
+                catch_error_file.write("\n")
 
     def clear_data(self):
         self.output_bit_data_list_2d = []
@@ -142,6 +157,7 @@ class Receiver:
                 if success:
                     # Receiver przyjmuje ramke, zostaje zapisana
                     self.output_bit_data_list_2d.append(decoded_frame)
+                    self.compare_frame(decoded_frame, frame_index)
                     frame_index += 1
                 else:
                     self.frame_error_detected_count += 1
@@ -256,6 +272,7 @@ class Receiver:
 
                 if success:
                     self.output_bit_data_list_2d.append(decoded_frame)
+                    self.compare_frame(decoded_frame, frame_index + advance)
                     advance += 1
                 else:
                     break
