@@ -288,7 +288,6 @@ class Receiver:
 
             if len(self.output_bit_data_list_2d) == frame_count:
                 self.channel.send_stop_msg(self.stop_msg)
-                print("STOP - Receiver\n")
             else:
                 # Receiver odpowiada - jaka ramke o danym indeksie aktualnie oczekuje
                 self.channel.transmit_data(self.frame_sequence_util.append_sequence_number(ack_encoded))
@@ -300,6 +299,7 @@ class Receiver:
             else:
                 # jesli nie - fail
                 self.ack_fail_count += 1
+        print("STOP - Receiver\n")
 
     def check_for_stop_msg(self, ack_bit_len, encoded_ack_list_received, ack_coding_type, frame_count, window_size):
         if len(self.output_bit_data_list_2d) <= (frame_count - window_size - 1):

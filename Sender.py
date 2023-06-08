@@ -230,12 +230,13 @@ class Sender:
                 break
 
             encoded_frame_received = self.channel.receive_data()
-            frame_data = self.frame_sequence_util.split_sequence_from_frame(encoded_frame_received)
-            acknowledgement_encoded = frame_data[1]
 
-            if self.check_for_stop_msg_go_back_n(encoded_frame_received, lower_window_index):
+            if self.check_for_stop_msg_go_back_n(encoded_frame_received, lower_window_index, window_size):
                 # Sender exiting...
                 break
+
+            frame_data = self.frame_sequence_util.split_sequence_from_frame(encoded_frame_received)
+            acknowledgement_encoded = frame_data[1]
 
             match self.ack_coding_type:
 
@@ -302,10 +303,10 @@ class Sender:
                 self.ack_error_count += 1
         print("STOP - Sender")
 
-    def check_for_stop_msg_go_back_n(self, frame_data, index):
+    def check_for_stop_msg_go_back_n(self, frame_data, index, window_size):
         one_count = 0
         zero_count = 0
-        if index <= len(self.bit_data_list_2d) - 1:
+        if index < (len(self.bit_data_list_2d) - 1) - window_size:
             return False
 
         ack = frame_data
@@ -314,19 +315,19 @@ class Sender:
             case EncodingTypeEnum.EncodingType.ParityBit:
                 decoded_ack_list_received = Decoder.decode_parity_bit_encoded_frame(ack)
             case EncodingTypeEnum.EncodingType.CRC_32:
-                decoded_ack_list_received = Decoder.decode_crc32_encoded_frame_and_check_sum(ack)
+                decoded_ack_list_received = Decoder.decode_crc32_encoded_frame_and_check_sum(ack)[0]
             case EncodingTypeEnum.EncodingType.CRC_8:
-                decoded_ack_list_received = Decoder.decode_crc8_encoded_frame_and_check_sum(ack)
+                decoded_ack_list_received = Decoder.decode_crc8_encoded_frame_and_check_sum(ack)[0]
 
-        if len(decoded_ack_list_received) <= self.regular_acknowledgement_length:
+        if len(decoded_ack_list_received) != 2 * self.regular_acknowledgement_length:
             return False
         else:
-            for i in range(len(self.acknowledgement_decoded)):
-                if self.acknowledgement_decoded[i] == 1:
+            for i in range(len(decoded_ack_list_received)):
+                if decoded_ack_list_received[i] == 1:
                     one_count += 1
                 else:
                     zero_count += 1
-            if abs(one_count - zero_count) <= 1:
+            if abs(one_count - zero_count) <= self.regular_acknowledgement_length * 0.75:
                 return True
             else:
                 return False
