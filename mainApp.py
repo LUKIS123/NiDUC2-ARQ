@@ -27,7 +27,7 @@ testing = False
 simulation_repeats = 1
 
 # maximum frame repeats allowed
-frame_repeat_limit = 1000
+frame_repeat_limit = 10000
 
 if str(sys.argv[1]) == "generate":
     byte_array = ByteUtils.generate_bytes(int(sys.argv[2]))
@@ -132,6 +132,11 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
                                      args=(len(src_frames), ack_len))
         else:
             window_size = 4
+            if iteration == 0:
+                try:
+                    window_size = int(input("Enter Go-Back-N window size [default=4]: "))
+                except ValueError:
+                    pass
             sender_thread = Thread(target=sender.threaded_go_back_n_sender_function,
                                    args=(range(window_size), window_size, ack_len))
             receiver_thread = Thread(target=receiver.threaded_go_back_n_receiver_function,
