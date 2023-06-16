@@ -275,5 +275,3 @@ elif str(sys.argv[1]) == "run" or str(sys.argv[1]) == "test":
 
     print("\nEXITING SIMULATION...")
     sys.exit()
-
-# TODO: jedna ramka 100 bajtow czyli 800bit + naglowek i stopka

@@ -44,9 +44,6 @@ class Channel:
                                                                self.probability_3, self.probability_4))
             case _:
                 print("Noise type invalid")
-        # printing transmitted data
-        # print(self.q[0])
-        # print("\n")
 
         self.condition_object.notify()
         self.condition_object.wait()

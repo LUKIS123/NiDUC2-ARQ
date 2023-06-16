@@ -21,8 +21,6 @@ class FrameSequencing:
         return [*binary_seq, *list_1d]
 
     def split_sequence_from_frame(self, list_1d):
-        # list[0] dostep do naglowka
-        # list[1] dostep do ramki
         return list_1d[:self.heading_len], list_1d[self.heading_len:]
 
     @staticmethod
@@ -39,8 +37,3 @@ class FrameSequencing:
             self.frame_number = number % (pow(2, self.heading_len) - 1)
         else:
             self.frame_number = number
-
-# seq = FrameSequencingUtils.FrameSequencing(16)
-# t = seq.append_sequence_number([1, 1, 1, 1, 1, 1])
-# split = seq.split_sequence_from_frame(t)
-# seq.get_int_from_heading(split[0])

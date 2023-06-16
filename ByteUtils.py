@@ -61,15 +61,3 @@ def binary_to_byte_arr(data_list_1d):
 def calculate_md5_hash(byte_arr):
     result = hashlib.md5(byte_arr)
     return result.hexdigest()
-
-# ======================== FILE UTILS ================================
-# byte_array = ByteUtils.generate_bytes(800)
-# ByteUtils.save_byte_file(byte_array, "data_file.txt")
-# print(byte_array)
-# bin_input = ByteUtils.get_binary_output_from_file("data_file.txt")
-# print(bin_input)
-# print(len(bin_input))
-# print(type(bin_input))
-# t = ByteUtils.binary_to_byte_arr(bin_input)
-# print(t)
-# ======================== FILE UTILS ================================
